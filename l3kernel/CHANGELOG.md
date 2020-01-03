@@ -9,10 +9,14 @@ this project uses date-based 'snapshot' version identifiers.
 
 ### Added
 - `\file_hex_dump:n(nn)` and `\file_get_hex_dump:n(nn)N(TF)`
+- `\str_<type>case:n`
 - `\text_expand:n` and supporting data structures
 
 ### Changed
 - Distribute LaTeX3 News
+
+### Deprecated
+- `\str_<type>_case:n`
 
 ## [2019-11-07]
 
