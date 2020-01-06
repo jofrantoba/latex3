@@ -1,0 +1,1532 @@
+% \iffalse meta-comment
+%
+%% File: l3text-math.dtx
+%
+% Copyright (C) 2020 The LaTeX3 Project
+%
+% It may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License (LPPL), either version 1.3c of this
+% license or (at your option) any later version.  The latest version
+% of this license is in the file
+%
+%    https://www.latex-project.org/lppl.txt
+%
+% This file is part of the "l3kernel bundle" (The Work in LPPL)
+% and all files in that bundle must be distributed together.
+%
+% -----------------------------------------------------------------------
+%
+% The development version of the bundle can be found at
+%
+%    https://github.com/latex3/latex3
+%
+% for those people who are interested.
+%
+%<*driver>
+\documentclass[full,kernel]{l3doc}
+\begin{document}
+  \DocInput{\jobname.dtx}
+\end{document}
+%</driver>
+% \fi
+%
+% \title{^^A
+%   The \textsf{l3text-math} package: text processing (math mode)^^A
+% }
+%
+% \author{^^A
+%  The \LaTeX3 Project\thanks
+%    {^^A
+%      E-mail:
+%        \href{mailto:latex-team@latex-project.org}
+%          {latex-team@latex-project.org}^^A
+%    }^^A
+% }
+%
+% \date{Released 2019-11-07}
+%
+% \maketitle
+%
+% \begin{documentation}
+%
+% \end{documentation}
+%
+% \begin{implementation}
+%
+% \section{\pkg{l3text-math} implementation}
+%
+%    \begin{macrocode}
+%<*initex|package>
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+%<@@=text>
+%    \end{macrocode}
+%
+% \subsection{Purifying math}
+%
+% \begin{macro}[rEXP]{\text_purify_math_unchanged:n}
+% \begin{macro}[rEXP]{\@@_purify_math_unchanged:Nw}
+% \begin{macro}[rEXP]{\@@_purify_math_unchanged:NNw}
+%   Top-level functions for purifying math mode: just keep as-is.
+%    \begin{macrocode}
+\cs_new:Npn \text_purify_math_unchanged:n #1
+  {
+    \exp_after:wN \@@_purify_math_unchanged:Nw
+      \l_text_math_delims_tl $ $ \q_stop
+    \exp_not:n {#1}
+    \exp_after:wN \@@_purify_math_unchanged:NNw
+      \l_text_math_delims_tl $ $ \q_stop
+  }
+\cs_new:Npn \@@_purify_math_unchanged:Nw #1#2 \q_stop
+  { \exp_not:n {#1} }
+\cs_new:Npn \@@_purify_math_unchanged:NNw #1#2#3 \q_stop
+  { \exp_not:n {#2} }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[rEXP]{\text_purify_math_chars:n}
+% \begin{macro}[rEXP]{\@@_purify_math_chars_loop:w}
+% \begin{macro}[rEXP]{\@@_purify_math_chars_space:w}
+% \begin{macro}[rEXP]{\@@_purify_math_chars_group:n}
+% \begin{macro}[rEXP]{\@@_purify_math_chars_N_type:N}
+%   Just keeping the character text could be done using a faster loop,
+%   but that looses the spaces. Not a big issue in math mode (thought it
+%   is nice to keep them), but any nested text-in-math needs them: this
+%   was there is no need to actually check for such material.
+%    \begin{macrocode}
+\cs_new:Npn \text_purify_math_chars:n #1
+  {
+    \@@_purify_math_chars_loop:w #1
+      \q_recursion_tail \q_recursion_stop
+  }
+\cs_new:Npn \@@_purify_math_chars_loop:w #1 \q_recursion_stop
+  {
+    \tl_if_head_is_N_type:nTF {#1}
+      { \@@_purify_math_chars_N_type:N }
+      {
+        \tl_if_head_is_group:nTF {#1}
+          { \@@_purify_math_chars_group:n }
+          { \@@_purify_math_chars_space:w }
+      }
+    #1 \q_recursion_stop
+  }
+\exp_last_unbraced:NNo \cs_new:Npn \@@_purify_math_chars_space:w
+  \c_space_tl
+  {
+    \c_space_tl
+    \@@_purify_math_chars_loop:w
+  }
+\cs_new:Npn \@@_purify_math_chars_group:n #1
+  { \@@_purify_math_chars_loop:w #1 }
+\cs_new:Npn \@@_purify_math_chars_N_type:N #1
+  {
+    \quark_if_recursion_tail_stop:N #1
+    \bool_lazy_or:nnT
+      { \token_if_letter_p:N #1 }
+      { \token_if_other_p:N #1 }
+      { #1 }
+    \@@_purify_math_chars_loop:w
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}[rEXP]{\text_purify_math_unicode:n}
+% \begin{macro}[rEXP]{\@@_purify_unimath_loop:nw}
+% \begin{macro}[rEXP]{\@@_purify_unimath_chars:nn}
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_normal:nnnnnnnnn ,
+%     \@@_purify_unimath_rm:nnnnnnnnn     ,
+%     \@@_purify_unimath_bf:nnnnnnnnn     ,
+%     \@@_purify_unimath_it:nnnnnnnnn     ,
+%     \@@_purify_unimath_bfit:nnnnnnnnn   ,
+%     \@@_purify_unimath_scr:nnnnnnnnn    ,
+%     \@@_purify_unimath_bfscr:nnnnnnnnn  ,
+%     \@@_purify_unimath_frak:nnnnnnnnn   ,
+%     \@@_purify_unimath_bb:nnnnnnnnn    ,
+%     \@@_purify_unimath_bffrak:nnnnnnnnn ,
+%     \@@_purify_unimath_sf:nnnnnnnnn     ,
+%     \@@_purify_unimath_bfsf:nnnnnnnnn   ,
+%     \@@_purify_unimath_itsf:nnnnnnnnn   ,
+%     \@@_purify_unimath_bfitsf:nnnnnnnnn ,
+%     \@@_purify_unimath_tt:nnnnnnnnn
+%   }
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_sf:nnnnn     ,
+%     \@@_purify_unimath_bfsf:nnnnn   ,
+%     \@@_purify_unimath_itsf:nnnnn   ,
+%     \@@_purify_unimath_bfitsf:nnnnn ,
+%     \@@_purify_unimath_tt:nnnnn
+%   }
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_cs:nN       ,
+%     \@@_purify_unimath_replace:nN
+%   }
+% \begin{macro}[rEXP]{\@@_purify_unimath_cs:nN}
+% \begin{macro}[rEXP]{\@@_purify_unimath_cs:nw}
+% \begin{macro}[rEXP]{\@@_purify_unimath_char:nN}
+% \begin{macro}[rEXP]{\@@_purify_unimath_script:nnn}
+% \begin{macro}[rEXP]{\@@_purify_unimath_script:nnnnw}
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_script_super: ,
+%     \@@_purify_unimath_script_sub:
+%   }
+%   Converting to Unicode text (called |unimath| for convenience in the
+%   code) has been implemented by a number of people in various tools.
+%   In particular, see \url{http://latex2unicode.herokuapp.com/}
+%   and the Unicod report on the approach taken by Word
+%   (\url{http://www.unicode.org/notes/tn28/UTN28-PlainTextMath-v3.1.pdf}).
+%
+%  In contrast to the text purfying code, here we are dealing with
+%  a set of tokens that are essentially fixed; they have to match with
+%  Unicode and with what other converters do. Thus the various mappings
+%  are \emph{not} flexible: all internal data.
+%
+%   As with the other math mode loops, we start off in the standard way.
+%   Here, we have to track which math font is active, so there is an
+%   \texttt{n}-type argument to pass. As spaces need to be tided up, it
+%   is easiest to use a faster loop than usual. However, there is a need
+%   to know the nature of the end-of-loop, so it is done manually.
+%    \begin{macrocode}
+\cs_new:Npn \text_purify_math_unicode:n #1
+  {
+    \@@_purify_unimath_loop:nw { normal } #1
+      \q_recursion_tail \q_recursion_stop
+  }
+%    \end{macrocode}
+%   For \texttt{N}-type arguments, we first look for the cases that
+%   follow font choice. Those can be both chars and control sequences,
+%   hence going up-front. Much of the work there is done at the
+%   set-up stage, so the lookup is quite easy. Then we look for fixed
+%   mappings: again, these could be chars such as |-| or commands.
+%   Only if none of these apply do we split into two paths.
+%    \begin{macrocode}
+\cs_new:Npn \@@_purify_unimath_loop:nw #1#2
+  {
+    \quark_if_recursion_tail_stop:N #2
+    \cs_if_exist:cTF
+      { c_@@_math_chars_ \token_to_str:N #2 _tl }
+      {
+        \exp_args:Nv \@@_purify_unimath_chars:nn
+          { c_@@_math_chars_ \token_to_str:N #2 _tl }
+          {#1}
+      }
+      {
+        \cs_if_exist:cTF
+          { c_@@_math_char_ \token_to_str:N #2 _tl }
+          {
+            \exp_not:v
+              { c_@@_math_char_ \token_to_str:N #2 _tl }
+            \@@_purify_unimath_loop:nw {#1}
+          }
+          {
+            \token_if_cs:NTF #2
+              { \@@_purify_unimath_cs:nN }
+              { \@@_purify_unimath_char:nN }
+                {#1} #2
+          }
+      }
+  }
+%    \end{macrocode}
+%   The font-sensitive char data is stored in token lists. Other than |normal|,
+%   everything is straight extraction. For the former, we have to pick up Greek
+%   capitals, which has the complexity of handling $8$-bit characters.
+%    \begin{macrocode}
+\cs_new:Npn \@@_purify_unimath_chars:nn #1#2
+  {
+    \use:c { @@_purify_unimath_ #2 :nnnnnnnnn } #1
+    \@@_purify_unimath_loop:nw {#2}
+  }
+\bool_lazy_or:nnTF
+  { \sys_if_engine_luatex_p: }
+  { \sys_if_engine_xetex_p: }
+  {
+    \cs_new:Npn \@@_purify_unimath_normal:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+      {
+        \bool_lazy_or:nnTF
+          { \int_compare_p:nNn { `#1 } < { "0391 } }
+          { \int_compare_p:nNn { `#1 } > { "03A9 } }
+          { \@@_purify_unimath_it:nnnnnnnnn }
+          { \@@_purify_unimath_rm:nnnnnnnnn }
+            {#1} {#2} {#3} {#4} {#5} {#6} {#6} {#8} {#9}
+      }
+  }
+  {
+    \cs_new:Npn \@@_purify_unimath_normal:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+      {
+        \int_compare:nNnTF { \exp_after:wN ` \tl_head:w #1 \q_stop } = { "CE }
+          {
+            \bool_lazy_or:nnTF
+              {
+                \int_compare_p:nNn
+                  { \exp_after:wN ` \use_ii:nn #1 } < { "91 }
+              }
+              {
+                \int_compare_p:nNn
+                  { \exp_after:wN ` \use_ii:nn #1 } > { "A9 }
+              }
+              { \@@_purify_unimath_it:nnnnnnnnn }
+              { \@@_purify_unimath_rm:nnnnnnnnn }
+          }
+          { \@@_purify_unimath_it:nnnnnnnnn }
+            {#1} {#2} {#3} {#4} {#5} {#6} {#6} {#8} {#9}
+      }
+  }
+%    \end{macrocode}
+%   Lots and lots of simple lookups.
+%    \begin{macrocode}
+\cs_new:Npn \@@_purify_unimath_rm:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#1}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_bf:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#2}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_it:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#3}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_bfit:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#4}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_scr:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#5}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_bfscr:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#6}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_frak:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#7}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_bb:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#8}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_bffrak:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \exp_not:n {#9}
+    \use_none:nnnnn
+  }
+\cs_new:Npn \@@_purify_unimath_sf:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  { \@@_purify_unimath_ss:nnnnn }
+\cs_new:Npn \@@_purify_unimath_sf:nnnnn #1#2#3#4#5
+  { \exp_not:n {#1} }
+\cs_new:Npn \@@_purify_unimath_bfsf:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  { \@@_purify_unimath_bfsf:nnnnn }
+\cs_new:Npn \@@_purify_unimath_bfsf:nnnnn #1#2#3#4#5
+  { \exp_not:n {#2} }
+\cs_new:Npn \@@_purify_unimath_itsf:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  { \@@_purify_unimath_itsf:nnnnn }
+\cs_new:Npn \@@_purify_unimath_itsf:nnnnn #1#2#3#4#5
+  { \exp_not:n {#3} }
+\cs_new:Npn \@@_purify_unimath_bfitsf:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  { \@@_purify_unimath_bfitsf:nnnnn }
+\cs_new:Npn \@@_purify_unimath_bfitsf:nnnnn #1#2#3#4#5
+  { \exp_not:n {#4} }
+\cs_new:Npn \@@_purify_unimath_tt:nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  { \@@_purify_unimath_tt:nnnnn }
+\cs_new:Npn \@@_purify_unimath_tt:nnnnn #1#2#3#4#5
+  { \exp_not:n {#5} }
+%    \end{macrocode}
+%   For control sequences, we may have specific replacement functions,
+%   for example to handle |\frac|: these are covered here. The
+%   replacements themselves may loop before or after the additional
+%   tokens, so they are responsible for adding the loop function.
+%    \begin{macrocode}
+\cs_new:Npn \@@_purify_unimath_cs:nN #1#2
+  {
+    \cs_if_exist:cTF { @@_purify_unimath_ \token_to_str:N #2 :nw }
+      {
+        \exp_last_unbraced:Nno \@@_purify_unimath_replace:nN {#1}
+          { \cs:w @@_purify_unimath_ \token_to_str:N #2 :nw \cs_end: }
+      }
+      { \@@_purify_unimath_expand:nN {#1} #2 }
+  }
+\cs_new:Npn \@@_purify_unimath_replace:nN #1#2
+  { #2 {#1} }
+%    \end{macrocode}
+%   If we get this far, simply expand the token if possible, accounting
+%   for the case of taking an argument.
+%    \begin{macrocode}
+\cs_new:Npn \@@_purify_unimath_expand:nN #1#2
+  {
+    \token_if_expandable:NTF #2
+      { \@@_purify_unimath_expand:nw {#1} #2 }
+      { \@@_purify_unimath_loop:nw {#1} }
+  }
+\cs_new:Npn \@@_purify_unimath_expand:nw #1#2 \q_recursion_stop
+  {
+    \exp_last_unbraced:Nno \@@_purify_unimath_loop:nw {#1}
+      { #2 \q_recursion_stop }
+  }
+%    \end{macrocode}
+%   To deal with super- and subscripts, we need to map over everything
+%   and find the limited number of available slots. If there is no hit,
+%   check for implicit characters then move on.
+%    \begin{macrocode}
+\cs_new:Npn \@@_purify_unimath_char:nN #1#2
+  {
+    \token_if_math_subscript:NTF #2
+      { \@@_purify_unimath_script:nnn {#1} { sub } }
+      {
+        \token_if_math_superscript:NTF #2
+          { \@@_purify_unimath_script:nnn {#1} { super } }
+          {
+            \token_if_eq_meaning:NNTF #2 '
+              { \@@_purify_unimath_prime:n {#1} }
+              {
+                \@@_token_to_explicit:N #2
+                \@@_purify_unimath_loop:nw {#1}
+              }
+          }
+      }
+  }
+\cs_new:Npn \@@_purify_unimath_script:nnn #1#2#3
+  {
+    \@@_purify_unimath_script:nnnnw { } {#1} {#2} {#3} #3
+      \q_recursion_tail \q_recursion_stop
+  }
+\cs_new:Npn \@@_purify_unimath_script:nnnnw #1#2#3#4#5
+  {
+    \quark_if_recursion_tail_stop_do:nn {#5}
+      {
+        \exp_not:n {#1}
+        \@@_purify_unimath_loop:nw {#2}
+      }
+    \cs_if_exist:cTF { c_@@_math_ #3 _ \tl_to_str:n {#5} _tl }
+      {
+        \exp_args:Ne \@@_purify_unimath_script:nnnnw
+          {
+            \exp_not:n {#1}
+            \exp_not:v { c_@@_math_ #3 _ \tl_to_str:n {#5} _tl }
+          }
+          {#2} {#3} {#4}
+      }
+      {
+        \use_i_delimit_by_q_recursion_stop:nw
+          {
+            \use:c { @@_purify_unimath_script_ #3 : }
+            \@@_purify_unimath_loop:nw {#2} ( #4 )
+          }
+      }
+  }
+\cs_new:Npn \@@_purify_unimath_script_super: { ^ }
+\cs_new:Npx \@@_purify_unimath_script_sub:
+  { \char_generate:nn { `\_ } { 8 } }
+\cs_new:Npn \@@_purify_unimath_prime:n #1
+  { \@@_purify_unimath_prime_auxi:nw {#1} }
+\cs_new:Npn \@@_purify_unimath_prime_auxi:nw #1#2
+  {
+    \token_if_eq_meaning:NNTF #2 '
+      { \@@_purify_unimath_prime_auxii:nw {#1} }
+      {
+        \exp_not:v { c_@@_math_char_\token_to_str:N \prime _tl }
+        \@@_purify_unimath_loop:nw {#1} #2
+      }
+  }
+\cs_new:Npn \@@_purify_unimath_prime_auxii:nw #1#2
+  {
+    \token_if_eq_meaning:NNTF #2 '
+      {
+        \exp_not:v { c_@@_math_char_\token_to_str:N \primeprimeprime _tl }
+        \@@_purify_unimath_loop:nw {#1}
+      }
+      {
+        \exp_not:v { c_@@_math_char_\token_to_str:N \primeprime _tl }
+        \@@_purify_unimath_loop:nw {#1} #2
+      }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \begin{macro}[rEXP]{\@@_purify_unimath_accent:nNn}
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_\grave:nw     ,
+%     \@@_purify_unimath_\acute:nw     ,
+%     \@@_purify_unimath_\hat:nw       ,
+%     \@@_purify_unimath_\widehat:nw   ,
+%     \@@_purify_unimath_\tilde:nw     ,
+%     \@@_purify_unimath_\widetilde:nw ,
+%     \@@_purify_unimath_\bar:nw       ,
+%     \@@_purify_unimath_\breve:nw     ,
+%     \@@_purify_unimath_\dot:nw       ,
+%     \@@_purify_unimath_\ddot:nw 
+%   }
+%    \begin{macrocode}
+\cs_new:Npn \@@_purify_unimath_accent:nNn #1#2#3
+  {
+    \quark_if_recursion_tail_stop:n {#3}
+    \exp_args:Nnnv \@@_purify_unimath_loop:nw {#1} {#3}
+      { c_@@_math_accent_ \token_to_str:N #2 _tl }
+  }
+\tl_map_inline:nn
+  {
+    \grave
+    \acute
+    \hat
+    \widehat
+    \tilde
+    \widetilde
+    \bar
+    \breve
+    \dot
+    \ddot
+  }
+  {
+    \cs_new:cpn { @@_purify_unimath_ \token_to_str:N #1 :nw } ##1
+      { \@@_purify_unimath_accent:nNn {##1} #1 }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \begin{macro}[rEXP]{\@@_purify_unimath_\frac:nw}
+% \begin{macro}[rEXP]{\@@_purify_unimath_\frac:nw}
+% \begin{macro}[rEXP]{\@@_purify_unimath_\frac:nn}
+% \begin{macro}[rEXP]{\@@_purify_unimath_\frac:n}
+%   Handling \tn{frac} required that the two arguments are processed
+%   first, so that a check can be made on whether the two parts are
+%   single output characters. The exact detail then depends on whether
+%   the engine is $8$-bit or Unicode. For the former, a single character
+%   may be one or more bytes, so there is a check to see if we have
+%   more than one \enquote{real} character.
+%    \begin{macrocode}
+\cs_new:cpx { @@_purify_unimath_ \token_to_str:N \frac :nw } #1#2#3
+  {
+    \exp_not:c { @@_purify_unimath_ \token_to_str:N \frac :nn }
+       {#1} {#2}
+    /
+    \exp_not:c { @@_purify_unimath_ \token_to_str:N \frac :nn }
+       {#1} {#3}
+    \c_space_tl
+    \exp_not:N \@@_purify_unimath_loop:nw {#1}
+  }
+\bool_lazy_or:nnTF
+  { \sys_if_engine_luatex_p: }
+  { \sys_if_engine_xetex_p: }
+  {
+    \cs_new:cpx { @@_purify_unimath_ \token_to_str:N \frac :nn } #1#2
+      {
+        \exp_not:N \exp_args:Ne
+        \exp_not:c { @@_purify_unimath_ \token_to_str:N \frac :n }
+          {
+            \exp_not:N \@@_purify_unimath_loop:nw {#1} #2
+              \exp_not:N \q_recursion_tail \exp_not:N \q_recursion_stop
+          }
+      }
+    \cs_new:cpn { @@_purify_unimath_ \token_to_str:N \frac :n } #1
+      {
+        \tl_if_single_token:nTF {#1}
+          { \exp_not:n {#1} }
+          { ( \exp_not:n { #1 } ) }
+      }
+  }
+  {
+    \cs_new:cpx { @@_purify_unimath_ \token_to_str:N \frac :nn } #1#2
+      {
+        \exp_not:N \exp_args:Ne
+          \exp_not:c { @@_purify_unimath_ \token_to_str:N \frac :n }
+          {
+            \exp_not:N \@@_purify_unimath_loop:nw {#1} #2
+              \exp_not:N \q_recursion_tail \exp_not:N \q_recursion_stop
+          }
+      }
+    \cs_new:cpn { @@_purify_unimath_ \token_to_str:N \frac :n } #1
+      {
+        \tl_if_single_token:nTF {#1}
+          { \exp_not:n {#1} }
+          {
+            \int_compare:nNnTF { \exp_after:wN ` \tl_head:w #1 \q_stop }
+              < { "C2 }
+              { ( \exp_not:n {#1} ) }
+              {
+               \int_compare:nNnTF { \exp_after:wN ` \tl_head:w #1 \q_stop }
+                 < { "E0 }
+                 {
+                   \tl_if_blank:oTF { \use_none:nn #1 }
+                     { \exp_not:n {#1} }
+                     { ( \exp_not:n {#1} ) }
+                 }
+                 {
+                   \int_compare:nNnTF { \exp_after:wN ` \tl_head:w #1 \q_stop }
+                     < { "F0 }
+                       {
+                         \tl_if_blank:oTF { \use_none:nnn #1 }
+                           { \exp_not:n {#1} }
+                           { ( \exp_not:n {#1} ) }
+                       }
+                       {
+                         \int_compare:nNnTF
+                           { \exp_after:wN ` \tl_head:w #1 \q_stop }
+                           < { "F5 }
+                           {
+                             \tl_if_blank:oTF { \use_none:nnnn #1 }
+                               { \exp_not:n {#1} }
+                               { ( \exp_not:n {#1} ) }
+                           }
+                           { ( \exp_not:n {#1} ) }
+                       }
+                 }
+              }
+          }
+      }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \begin{macro}[rEXP]{\@@_purify_unimath_\genfrac:nw}
+%  The \pkg{amsmath} generalised version: avoid needing to cover every
+%  single possible variant.
+%    \begin{macrocode}
+\cs_new:cpx { @@_purify_unimath_ \token_to_str:N \genfrac :nw } #1#2#3#4#5#6#7
+  {
+    \exp_not:N \@@_purify_unimath_loop:nw {#1} #2
+      \exp_not:N \q_recursion_tail \exp_not:N \q_recursion_stop
+    \exp_not:c { @@_purify_unimath_ \token_to_str:N \frac :nn }
+       {#1} {#6}
+    /
+    \exp_not:c { @@_purify_unimath_ \token_to_str:N \frac :nn }
+       {#1} {#7}
+    \exp_not:N \@@_purify_unimath_loop:nw {#1} #3
+    \c_space_tl
+  }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_\mbox:nw       ,
+%     \@@_purify_unimath_\hbox:nw       ,
+%     \@@_purify_unimath_\smash:nw      ,
+%     \@@_purify_unimath_\text:nw       ,
+%     \@@_purify_unimath_\textrm:nw     ,
+%     \@@_purify_unimath_\textsf:nw     ,
+%     \@@_purify_unimath_\texttt:nw     ,
+%     \@@_purify_unimath_\textnormal:nw ,
+%     \@@_purify_unimath_\textbf:nw     ,
+%     \@@_purify_unimath_\textmd:nw     ,
+%     \@@_purify_unimath_\textit:nw     ,
+%     \@@_purify_unimath_\textsl:nw     ,
+%     \@@_purify_unimath_\textsc:nw     ,
+%     \@@_purify_unimath_\textup:nw     ,
+%     \@@_purify_unimath_\textulc:nw    ,
+%     \@@_purify_unimath_\emph:nw
+%   }
+%   Commands that produce text: these need to escape from math mode
+%   processing.
+%    \begin{macrocode}
+\cs_new:cpn { @@_purify_unimath_ \token_to_str:N \mbox :nw } #1#2
+  {
+   \text_purify:n {#2}
+   \@@_purify_unimath_loop:nw {#1}
+  }
+\tl_map_inline:nn
+  {
+    \hbox
+    \smash
+    \text
+    \textrm
+    \textsf
+    \texttt
+    \textnormal
+    \textbf
+    \textmd
+    \textit
+    \textsl
+    \textsc
+    \textup
+    \textulc
+    \emph
+  }
+  {
+    \cs_new_eq:cc
+      { @@_purify_unimath_ \token_to_str:N #1 :nw } 
+      { @@_purify_unimath_ \token_to_str:N \mbox :nw } 
+  }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[rEXP]
+%   {
+%      \@@_purify_unimath_\symnormal:nw ,
+%      \@@_purify_unimath_\symrm:nw     ,
+%      \@@_purify_unimath_\symup:nw     ,
+%      \@@_purify_unimath_\symbf:nw     ,
+%      \@@_purify_unimath_\symbfup:nw   ,
+%      \@@_purify_unimath_\symit:nw     ,
+%      \@@_purify_unimath_\symbfit:nw   ,
+%      \@@_purify_unimath_\symscr:nw    ,
+%      \@@_purify_unimath_\symbfscr:nw  ,
+%      \@@_purify_unimath_\symfrak:nw   ,
+%      \@@_purify_unimath_\symbb:nw     ,
+%      \@@_purify_unimath_\symbffrak:nw ,
+%      \@@_purify_unimath_\symsfup:nw   ,
+%      \@@_purify_unimath_\symbfsfup:nw ,
+%      \@@_purify_unimath_\symsfit:nw   ,
+%      \@@_purify_unimath_\symbfsfit:nw ,
+%      \@@_purify_unimath_\symtt:nw
+%      \@@_purify_unimath_\mathnormal:nw ,
+%      \@@_purify_unimath_\mathrm:nw     ,
+%      \@@_purify_unimath_\mathup:nw     ,
+%      \@@_purify_unimath_\mathbf:nw     ,
+%      \@@_purify_unimath_\mathbfup:nw   ,
+%      \@@_purify_unimath_\mathit:nw     ,
+%      \@@_purify_unimath_\mathbfit:nw   ,
+%      \@@_purify_unimath_\mathscr:nw    ,
+%      \@@_purify_unimath_\mathbfscr:nw  ,
+%      \@@_purify_unimath_\mathfrak:nw   ,
+%      \@@_purify_unimath_\mathbb:nw     ,
+%      \@@_purify_unimath_\mathbffrak:nw ,
+%      \@@_purify_unimath_\mathsfup:nw   ,
+%      \@@_purify_unimath_\mathbfsf:nw   ,
+%      \@@_purify_unimath_\mathbfsfup:nw ,
+%      \@@_purify_unimath_\mathsfit:nw   ,
+%      \@@_purify_unimath_\mathbfsfit:nw ,
+%      \@@_purify_unimath_\mathtt:nw
+%   }
+%   For the math-font commands, we need to change the propagated
+%   information, do the recursion then switch back.
+%    \begin{macrocode}
+\group_begin:
+  \cs_set_protected:Npn \@@_tmp:nn #1#2
+    {
+      \quark_if_recursion_tail_stop:n {#1}
+      \cs_new:cpn { @@_purify_unimath_ \c_backslash_str sym #1 :nw } ##1##2
+        {
+          \@@_purify_unimath_loop:nw {#2} ##2
+            \q_recursion_tail \q_recursion_stop
+          \@@_purify_unimath_loop:nw {##1}
+        }
+      \cs_new_eq:cc
+        { @@_purify_unimath_ \c_backslash_str math #1 :nw }
+        { @@_purify_unimath_ \c_backslash_str sym #1 :nw }
+      \@@_tmp:nn
+    }
+  \@@_tmp:nn
+    { normal } { normal }
+    { rm }     { rm }
+    { up }     { rm }
+    { bf }     { bf }
+    { bfup }   { bf }
+    { it }     { it }
+    { bfit }   { bfit }
+    { scr }    { scr }
+    { bfscr }  { bfscr }
+    { frak }   { frak }
+    { bb }     { bb }
+    { bffrak } { bffrak }
+    { sf }     { sf }
+    { sfup }   { sf }
+    { bfsf   } { bfsf }
+    { bfsfup } { bfsf }
+    { sfit }   { itsf }
+    { bfsfit } { bfitsf }
+    { tt }     { tt }
+    { \q_recursion_tail } { }
+    \q_recursion_stop
+\group_end:
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_\mathop:nw  ,
+%     \@@_purify_unimath_\qopname:nw
+%   }
+% \begin{macro}[rEXP]{\@@_purify_unimath_opchk:nw}
+% \begin{macro}[rEXP]{\@@_purify_unimath_opchk:nN}
+% \begin{macro}[rEXP]{\@@_purify_unimath_opchk:nNn}
+%   To support operators, target both the \pkg{amsmath} and the standard
+%   internals. The look-ahead deals with super/subscripts, where a space
+%   should be moved.
+%    \begin{macrocode}
+\cs_new:cpn { @@_purify_unimath_ \token_to_str:N \mathop :nw } #1#2
+  {
+    \text_purify:n { \use_none:n #2 }
+    \@@_purify_unimath_opchk:nw {#1}
+  }
+\cs_new:cpn { @@_purify_unimath_ \token_to_str:N \qopname :nw } #1#2#3#4
+  {
+    \text_purify:n { #4 }
+    \@@_purify_unimath_opchk:nw {#1}
+  }
+\cs_new:Npn \@@_purify_unimath_opchk:nw #1#2 \q_recursion_stop
+  {
+    \tl_if_head_is_N_type:nTF {#2}
+      { \@@_purify_unimath_opchk:nN }
+      {
+        \tl_if_head_is_group:nT {#2}
+          { \c_space_tl }
+        \@@_purify_unimath_loop:nw
+      }
+      {#1} #2 \q_recursion_stop
+  }
+\cs_new:Npn \@@_purify_unimath_opchk:nN #1#2
+  {
+    \bool_lazy_or:nnTF
+      { \token_if_math_superscript_p:N #2 }
+      { \token_if_math_subscript_p:N #2 }
+      { \@@_purify_unimath_opchk:nNn {#1} #2 }
+      {
+        \c_space_tl
+        \@@_purify_unimath_loop:nw {#1} #2
+      }
+  }
+\cs_new:Npn \@@_purify_unimath_opchk:nNn #1#2#3
+  { \@@_purify_unimath_loop:nw {#1} #2 {#3} \c_space_tl }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_\bmod:nw ,
+%     \@@_purify_unimath_\pmod:nw
+%   }
+%    \begin{macrocode}
+%   A set of no-ops.
+\cs_new:cpn { @@_purify_unimath_ \token_to_str:N \bmod :nw } #1
+  {
+    \c_space_tl mod \c_space_tl
+    \@@_purify_unimath_loop:nw {#1}
+  }
+\cs_new:cpn { @@_purify_unimath_ \token_to_str:N \pmod :nw } #1#2
+  {
+    \c_space_tl ( mod \c_space_tl
+    \@@_purify_unimath_loop:nw {#1} #2 )
+  }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_\big:nw         ,
+%     \@@_purify_unimath_\Big:nw         ,
+%     \@@_purify_unimath_\bigg:nw        ,
+%     \@@_purify_unimath_\Bigg:nw        ,
+%     \@@_purify_unimath_\mathpalette:nw
+%   }
+%   A set of no-ops.
+%    \begin{macrocode}
+\tl_map_inline:nn
+  { \big \Big \bigg \Bigg \mathpalette }
+  {
+    \cs_new:cpn { @@_purify_unimath_ \token_to_str:N #1 :nw } ##1
+      { \@@_purify_unimath_loop:nw {##1} }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[rEXP]
+%   {
+%     \@@_purify_unimath_\hphantom:nw ,
+%     \@@_purify_unimath_\vphantom:nw ,
+%     \@@_purify_unimath_\phantom:nw
+%   }
+%   Gobble non-useful arguments but yielding a space.
+%    \begin{macrocode}
+\cs_new:cpn { @@_purify_unimath_ \token_to_str:N \vphantom :nw } #1#2
+  { \@@_purify_unimath_loop:nw {#1} }
+\tl_map_inline:nn
+  { \hphantom \phantom }
+  {
+    \cs_new:cpn { @@_purify_unimath_ \token_to_str:N #1 :nw } ##1##2
+      {
+        \c_space_tl
+        \@@_purify_unimath_loop:nw {##1}
+      }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}[rEXP]{\@@_purify_unimath_\sqrt:nw}
+% \begin{macro}[rEXP]{\@@_purify_unimath_\sqrt_aux:nw}
+%   Square root is tricky to handle; at the present, just dump the
+%   root if there is an index.
+%    \begin{macrocode}
+\cs_new:cpx { @@_purify_unimath_ \token_to_str:N \sqrt :nw } #1#2
+  {
+    \exp_not:N \bool_lazy_and:nnTF
+      { \exp_not:N \tl_if_single_token_p:n {#2} }
+      {
+        \exp_not:N \token_if_eq_meaning_p:NN #2 [ % ]
+      }
+      { \exp_not:c { @@_purify_unimath_ \token_to_str:N \sqrt _aux:nw } {#1} }
+      {
+        \exp_not:N \exp_not:v { c_@@_math_ \token_to_str:N \sqrt _tl }
+        \exp_not:N \@@_purify_unimath_loop:nw {#1} { ( #2 ) }
+      }
+  }
+\cs_new:cpx { @@_purify_unimath_ \token_to_str:N \sqrt _aux:nw } % [
+  #1#2 ] #3
+  {
+    \exp_not:N \str_case:nnTF {#2}
+      {
+        { 2 }
+          { \exp_not:N \exp_not:v { c_@@_math_ \token_to_str:N \sqrt _tl } }
+        { 3 }
+          { \exp_not:N \exp_not:v { c_@@_math_ \token_to_str:N \cuberoot _tl } }
+        { 4 }
+          { \exp_not:N \exp_not:v { c_@@_math_ \token_to_str:N \fourthroot _tl } }
+      }
+      { \exp_not:N \@@_purify_unimath_loop:nw {#1} }
+      {
+        \c_space_tl
+        \exp_not:N \@@_purify_unimath_loop:nw {#1} [ #2 ]
+          \exp_not:c { c_@@_math_ \token_to_str:N \sqrt _tl }
+      }
+        { ( #3 ) }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\text_set_purify_math_mode:n}
+%   Set up the mode for purification.
+%    \begin{macrocode}
+\cs_new_protected:Npn \text_set_purify_math_mode:n #1
+  {
+    \cs_if_exist:cTF { text_purify_math_ #1:n }
+      { \tl_set:Nn \l_@@_math_mode_tl {#1} }
+      { \__kernel_msg_error:nnn { kernel } { unknown-purify-mode } {#1} }
+  }
+\text_set_purify_math_mode:n { unchanged }
+\__kernel_msg_new:nnnn { kernel } { unknown-purify-mode }
+  { Unknown~math_purification~mode~'#1'. }
+  {
+    LaTeX~knows~how~to~purify~math~mode~as~'unchanged',~
+    'simple'~and~'unicode',~and~does~not~know~'#1'.
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \subsection{Character data for Unicode math}
+%
+% For characters with math font variants, there is potentially a lot of
+% data to store. To avoid a combinatorial exposition, the approach here is to
+% use one token list per \enquote{base} character. The pre-generated forms are
+% then stored in a token list in the order
+% \begin{enumerate}
+%   \item \texttt{normal}
+%   \item \texttt{bf}
+%   \item \texttt{it}
+%   \item \texttt{bfit}
+%   \item \texttt{scr}
+%   \item \texttt{bfscr}
+%   \item \texttt{frak}
+%   \item \texttt{bb}
+%   \item \texttt{bffrak}
+%   \item \texttt{sans}
+%   \item \texttt{bfsans}
+%   \item \texttt{itsans}
+%   \item \texttt{bfitsans}
+%   \item \texttt{tt}
+% \end{enumerate}
+% (labelling as for \pkg{unicode-math}). Where the character does not have the
+% correct font variant, the normal one is used.
+%
+% Working in this way, both $8$-bit and Unicode engines have the full data set
+% for these characters in around $100$ token lists.
+%
+% The first step is to create the generator functions: this is the only part
+% that is engine-specific.
+%     \begin{macrocode}
+\group_begin:
+  \cs_set:Npn \@@_group:n { }
+  \bool_lazy_or:nnTF
+    { \sys_if_engine_luatex_p: }
+    { \sys_if_engine_xetex_p: }
+    {
+      \cs_set:Npn \@@_tmp:n #1
+        {
+          \@@_group:n
+            { \char_generate:nn {#1} { \char_value_catcode:n {#1} } }
+        }
+    }
+    {
+      \cs_set:Npn \@@_tmp:n #1
+        { \exp_args:Ne \@@_tmp_aux:n { \char_codepoint_to_bytes:n {#1} } }
+      \cs_set:Npn \@@_tmp_aux:n #1
+        { \@@_tmp:nnnn #1 }
+      \cs_set:Npn \@@_tmp:nnnn #1#2#3#4
+        {
+          \tl_if_blank:nTF {#2}
+            { \@@_group:n { \char_generate:nn {#1} { 11 } } }
+            {
+              \@@_group:n
+                {
+                  \exp_after:wN \exp_after:wN \exp_after:wN
+                    \exp_not:N \char_generate:nn {#1} { 13 }
+                  \exp_after:wN \exp_after:wN \exp_after:wN
+                    \exp_not:N \char_generate:nn {#2} { 13 }
+                  \tl_if_blank:nF {#3}
+                    {
+                      \exp_after:wN \exp_after:wN \exp_after:wN
+                        \exp_not:N \char_generate:nn {#3} { 13 }
+                      \tl_if_blank:nF {#4}
+                        {
+                          \exp_after:wN \exp_after:wN \exp_after:wN
+                            \exp_not:N \char_generate:nn {#4} { 13 }
+                        }
+                    }
+                }
+            }
+        }
+    }
+%     \end{macrocode}
+% For Latin letters, the job is easy: there are a full set of font variants,
+% and both cases have a simple run. The only issue is the gap between the
+% two cases.
+%     \begin{macrocode}
+  \cs_set_protected:Npn \@@_tmp:nnn #1#2#3
+    {
+      \tl_const:cx
+        { c_@@_math_chars_ \char_generate:nn { #1 + #2 } { 12 } _tl }
+        {
+          \@@_tmp:n { #1 + #2 }
+          \@@_tmp:n { #1 + "1D400 + #3 }
+          \@@_tmp:n { #1 + "1D434 + #3 }
+          \@@_tmp:n { #1 + "1D468 + #3 }
+          \@@_tmp:n { #1 + "1D49C + #3 }
+          \@@_tmp:n { #1 + "1D4D0 + #3 }
+          \@@_tmp:n { #1 + "1D504 + #3 }
+          \@@_tmp:n { #1 + "1D538 + #3 }
+          \@@_tmp:n { #1 + "1D56C + #3 }
+          \@@_tmp:n { #1 + "1D5A0 + #3 }
+          \@@_tmp:n { #1 + "1D5D4 + #3 }
+          \@@_tmp:n { #1 + "1D608 + #3 }
+          \@@_tmp:n { #1 + "1D63C + #3 }
+          \@@_tmp:n { #1 + "1D670 + #3 }
+        }
+    }
+  \int_step_inline:nnn { 0 } { 25 }
+    {
+      \@@_tmp:nnn {#1} { `A } { 0 }
+      \@@_tmp:nnn {#1} { `a } { "1A }
+    }
+%     \end{macrocode}
+% Simply also for numbers, but with the fact that now most of the variants are
+% not present so the approach is biases that way.
+%     \begin{macrocode}
+  \int_step_inline:nnn { `0 } { `9 }
+    {
+      \tl_const:cx
+        { c_@@_math_chars_ \char_generate:nn {#1} { 12 } _tl }
+        {
+          \@@_tmp:n {#1}
+          \@@_tmp:n { #1 - `0 + "1D7CE }
+          \@@_tmp:n {#1}
+          \@@_tmp:n {#1}
+          \@@_tmp:n {#1}
+          \@@_tmp:n {#1}
+          \@@_tmp:n {#1}
+          \@@_tmp:n { #1 - `0 + "1D7D8 }
+          \@@_tmp:n {#1}
+          \@@_tmp:n { #1 - `0 + "1D7E2 }
+          \@@_tmp:n { #1 - `0 + "1D7EC }
+          \@@_tmp:n {#1}
+          \@@_tmp:n {#1}
+          \@@_tmp:n { #1 - `0 + "1D7F6 }
+        }
+    }
+%     \end{macrocode}
+% Greek is a lot more tricky. Some symbols have multiple forms, and the use
+% by mathematicians is different from that by Greek speakers. Then there are
+% the two forms of sigma. So we start with a pass to deal with the cases that
+% are straight-forward: those where the math symbol is the same as the Greek
+% one. We miss the problem cases, and re-start the mapping after the sigma
+% position to account for the variation in number of codepoints.
+%     \begin{macrocode}
+  \cs_set_protected:Npn \@@_tmp:Nnnnn #1#2#3#4#5
+    {
+      \tl_const:cx
+        { c_@@_math_chars_ \token_to_str:N #1 _tl }
+        {
+          \@@_tmp:n { #2 + #4 }
+          \@@_tmp:n { #2 + "1D6A8 + #5 }
+          \@@_tmp:n { #2 + "1D6E2 + #5 }
+          \@@_tmp:n { #2 + "1D71C + #5 }
+          \@@_tmp:n { #2 + #4 }
+          \@@_tmp:n { #2 + #4 }
+          \@@_tmp:n { #2 + #4 }
+          \@@_tmp:n { #2 + #4 }
+          \@@_tmp:n { #2 + #4 }
+          \@@_tmp:n { #2 + #4 }
+          \@@_tmp:n { #2 + "1D756 + #5 }
+          \@@_tmp:n { #2 + #4 }
+          \@@_tmp:n { #2 + "1D790 + #5 }
+          \@@_tmp:n { #2 + #4 }
+        }
+    }
+  \cs_set_protected:Npn \@@_tmp:nn #1#2
+    {
+      \quark_if_recursion_tail_stop:n {#2}
+      \tl_if_blank:nF {#2}
+        {
+          \exp_args:Nc \@@_tmp:Nnnnn
+            { \str_uppercase:n #2 }
+            {#1} { "0391 } { "0391 } { 0 }
+          \exp_args:Nc \@@_tmp:Nnnnn
+            {#2} {#1} { "1D6FC } { "03B1 } { "1A }
+        }
+      \exp_args:Ne \@@_tmp:nn { \int_eval:n { #1 + 1 } }
+    }
+  \@@_tmp:nn { 0 }
+      { alpha }
+      { beta }
+      { gamma }
+      { delta }
+      { }
+      { zeta }
+      { eta }
+      { theta }
+      { iota }
+      { kappa }
+      { lambda }
+      { mu }
+      { nu }
+      { xi }
+      { omicron }
+      { pi }
+      { rho }
+      { \q_recursion_tail }
+      \q_recursion_stop
+  \cs_set_protected:Npn \@@_tmp:nn #1#2
+    {
+      \quark_if_recursion_tail_stop:n {#2}
+      \tl_if_blank:nF {#2}
+        {
+          \exp_args:Nc \@@_tmp:Nnnnn
+            { \str_uppercase:n #2 }
+            {#1} { "1D6F5 } { "03A4 } { "13 }
+          \exp_args:Nc \@@_tmp:Nnnnn
+            {#2} {#1} { "1D70F } { "03C4 } { "2D }
+        }
+      \exp_args:Ne \@@_tmp:nn { \int_eval:n { #1 + 1 } }
+    }
+  \@@_tmp:nn { 0 }
+      { tau }
+      { upsilon }
+      { }
+      { chi }
+      { psi }
+      { omega }
+      { \q_recursion_tail }
+      \q_recursion_stop
+%     \end{macrocode}
+% The problem cases are all done by hand: these are the symbols as-understood
+% by mathematicians. At this stage we switch to using the fact that there is
+% a known difference between codepoints here in the math part of Unicode.
+%     \begin{macrocode}
+  \cs_set_protected:Npn \@@_tmp:Nnn #1#2#3
+    {
+      \quark_if_recursion_tail_stop:N #1
+      \tl_const:cx
+        { c_@@_math_chars_ \token_to_str:N #1 _tl }
+        {
+          \@@_tmp:n {"#2}
+          \@@_tmp:n {"#3}
+          \@@_tmp:n { "#3 + "3A }
+          \@@_tmp:n { "#3 + "74 }
+          \@@_tmp:n {"#2}
+          \@@_tmp:n {"#2}
+          \@@_tmp:n {"#2}
+          \@@_tmp:n {"#2}
+          \@@_tmp:n {"#2}
+          \@@_tmp:n {"#2}
+          \@@_tmp:n { "#3 + "AE }
+          \@@_tmp:n {"#2}
+          \@@_tmp:n { "#3 + "E8 }
+          \@@_tmp:n {"#2}
+        }
+      \@@_tmp:Nnn
+    }
+  \@@_tmp:Nnn
+    \epsilon { 03F5 } { 1D6DC }
+    \sigma   { 03C3 } { 1D6D4 }
+    \phi     { 03C6 } { 1D6DF }
+    \Epsilon { 0395 } { 1D6AC }
+    \Sigma   { 03A3 } { 1D6BA }
+    \Phi     { 03A6 } { 1D6BD }
+%     \end{macrocode}
+% Finally, deal with the variant symbols plus the odds and ends.
+%     \begin{macrocode}
+    \varepsilon { 03B5 } { 1D6C6 }
+    \vartheta   { 03D1 } { 1D6DD }
+    \varkappa   { 03F0 } { 1D6DE }
+    \varpi      { 03D6 } { 1D6E1 }
+    \varrho     { 03F1 } { 1D6E0 }
+    \varsigma   { 03C2 } { 1D6D3 }
+    \varphi     { 03D5 } { 1D6D7 }
+    \nabla      { 2207 } { 1D6C1 }
+    \partial    { 2202 } { 1D6DB }
+    \q_recursion_tail { } { }
+    \q_recursion_stop
+%     \end{macrocode}
+% Superscripts and subscripts.    
+%     \begin{macrocode}
+  \cs_set:Npn \@@_group:n #1 { #1 }
+  \cs_set_protected:Npn \@@_tmp:Nn #1#2
+    {
+      \quark_if_recursion_tail_stop:N #1
+      \tl_const:cx
+        { c_@@_math_super_ #1 _tl }
+        { \@@_tmp:n {"#2} }
+      \@@_tmp:Nn
+    }
+  \@@_tmp:Nn
+    2 { 00B2 }
+    3 { 00B3 }
+    1 { 00B9 }
+    0 { 2070 }
+    i { 2071 }
+    4 { 2074 }
+    5 { 2075 }
+    6 { 2076 }
+    7 { 2077 }
+    8 { 2078 }
+    9 { 2079 }
+    + { 207A }
+    - { 207B }
+    = { 207C }
+    ( { 207D } % ) (
+    ) { 207E }
+    n { 207F }
+    \q_recursion_tail { }
+    \q_recursion_stop
+  \cs_set_protected:Npn \@@_tmp:Nn #1#2
+    {
+      \quark_if_recursion_tail_stop:N #1
+      \tl_const:cx
+        { c_@@_math_sub_ #1 _tl }
+        { \@@_tmp:n {"#2} }
+      \@@_tmp:Nn
+    }
+  \@@_tmp:Nn
+    0 { 2080 }
+    1 { 2081 }
+    2 { 2082 }
+    3 { 2083 }
+    4 { 2084 }
+    5 { 2085 }
+    6 { 2086 }
+    7 { 2087 }
+    8 { 2088 }
+    9 { 2089 }
+    + { 208A }
+    - { 208B }
+    = { 208C }
+    ( { 208D } % ) (
+    ) { 208E }
+    a { 2090 }
+    e { 2090 }
+    o { 2090 }
+    x { 2090 }
+    k { 2090 }
+    l { 2090 }
+    m { 2090 }
+    n { 2090 }
+    p { 2090 }
+    s { 2090 }
+    t { 2090 }
+    \q_recursion_tail { }
+    \q_recursion_stop
+%     \end{macrocode}
+%  Data for the math mode accents.
+%     \begin{macrocode}
+  \cs_set_protected:Npn \@@_tmp:Nn #1#2
+    {
+      \quark_if_recursion_tail_stop:N #1
+      \tl_const:cx
+        { c_@@_math_accent_ \token_to_str:N #1 _tl }
+        { \@@_tmp:n {"#2} }
+      \@@_tmp:Nn
+    }
+  \@@_tmp:Nn
+    \grave     { 0300 }
+    \acute     { 0301 }
+    \hat       { 0302 }
+    \widehat   { 0302 }
+    \tilde     { 0303 }
+    \widetilde { 0303 }
+    \bar       { 0304 }
+    \breve     { 0306 }
+    \dot       { 0307 }
+    \ddot      { 0308 }
+    \q_recursion_tail { }
+    \q_recursion_stop
+%     \end{macrocode}
+%  Now move to the one-to-one mappings. The three up-front need non-standard
+%  category codes, then we move to the ones which can be done mechanically.
+%  Accent characters have to be pulled out as they need to be re-ordered
+%  relative to their parent letter. Notice that |-| is included here as
+%  it needs to be replaced. Also notice that |\primeprime| and
+%  |\primeprimeprime| are added.
+%     \begin{macrocode}
+  \tl_const:cx { c_@@_math_char_ \token_to_str:N \backslash _tl }
+    { \c_backslash_str }
+  \tl_const:cx { c_@@_math_char_ \token_to_str:N \lbrace _tl }
+    { \c_left_brace_str }
+  \tl_const:cx { c_@@_math_char_ \token_to_str:N \rbrace _tl }
+    { \c_right_brace_str }
+  \cs_set_protected:Npn \@@_tmp:Nn #1#2
+    {
+      \quark_if_recursion_tail_stop:N #1
+      \tl_const:cx
+        { c_@@_math_char_ \token_to_str:N #1 _tl }
+        { \@@_tmp:n {"#2} }
+      \@@_tmp:Nn
+    }
+  \@@_tmp:Nn
+    \mathdollar          { 0024 }
+    \lbrack              { 005B }
+    \rbrack              { 005D }
+    \vert                { 007C }
+    \mathsterling        { 00A3 }
+    \mathsection         { 00A7 }
+    \neg                 { 00AC }
+    \pm                  { 00B1 }
+    \mathparagraph       { 00B6 }
+    \cdotp               { 00B7 }
+    \times               { 00D7 }
+    \div                 { 00F7 }
+    \check               { 030C }
+    \underleftrightarrow { 034D }
+    \Vert                { 2016 }
+    \dagger              { 2020 }
+    \ddagger             { 2021 }
+    \prime               { 2032 }
+    \primeprime          { 2033 }
+    \primeprimeprime     { 2034 }
+    \overleftarrow       { 20D6 }
+    \overrightarrow      { 20D7 }
+    \vec                 { 20D7 }
+    \dddot               { 20DB }
+    \ddddot              { 20DC }
+    \overleftrightarrow  { 20E1 }
+    \underleftarrow      { 20EE }
+    \underrightarrow     { 20EF }
+    \Im                  { 2111 }
+    \ell                 { 2113 }
+    \wp                  { 2118 }
+    \Re                  { 211C }
+    \mho                 { 2127 }
+    \aleph               { 2135 }
+    \leftarrow           { 2190 }
+    \uparrow             { 2191 }
+    \rightarrow          { 2192 }
+    \downarrow           { 2193 }
+    \leftrightarrow      { 2194 }
+    \updownarrow         { 2195 }
+    \nwarrow             { 2196 }
+    \nearrow             { 2197 }
+    \searrow             { 2198 }
+    \swarrow             { 2199 }
+    \mapsto              { 21A6 }
+    \hookleftarrow       { 21A9 }
+    \hookrightarrow      { 21AA }
+    \leftharpoonup       { 21BC }
+    \leftharpoondown     { 21BD }
+    \rightharpoonup      { 21C0 }
+    \rightharpoondown    { 21C1 }
+    \rightleftharpoons   { 21CC }
+    \Leftarrow           { 21D0 }
+    \Uparrow             { 21D1 }
+    \Rightarrow          { 21D2 }
+    \Downarrow           { 21D3 }
+    \Leftrightarrow      { 21D4 }
+    \Updownarrow         { 21D5 }
+    \forall              { 2200 }
+    \partial             { 2202 }
+    \exists              { 2203 }
+    \nabla               { 2207 }
+    \in                  { 2208 }
+    \notin               { 2209 }
+    \ni                  { 220B }
+    \prod                { 220F }
+    \coprod              { 2210 }
+    \sum                 { 2211 }
+    -                    { 2212 }
+    \mp                  { 2213 }
+    \ast                 { 2217 }
+    \surd                { 221A }
+    \propto              { 221D }
+    \infty               { 221E }
+    \angle               { 2220 }
+    \mid                 { 2223 }
+    \parallel            { 2225 }
+    \wedge               { 2227 }
+    \vee                 { 2228 }
+    \cap                 { 2229 }
+    \cup                 { 222A }
+    \int                 { 222B }
+    \iint                { 222C }
+    \iiint               { 222D }
+    \oint                { 222E }
+    \sim                 { 223C }
+    \wr                  { 2240 }
+    \simeq               { 2243 }
+    \cong                { 2245 }
+    \approx              { 2248 }
+    \asymp               { 224D }
+    \doteq               { 2250 }
+    \ne                  { 2260 }
+    \equiv               { 2261 }
+    \leq                 { 2264 }
+    \geq                 { 2265 }
+    \ll                  { 226A }
+    \gg                  { 226B }
+    \prec                { 227A }
+    \succ                { 227B }
+    \subset              { 2282 }
+    \supset              { 2283 }
+    \subseteq            { 2286 }
+    \supseteq            { 2287 }
+    \uplus               { 228E }
+    \sqsubset            { 228F }
+    \sqsupset            { 2290 }
+    \sqsubseteq          { 2291 }
+    \sqsupseteq          { 2292 }
+    \sqcap               { 2293 }
+    \sqcup               { 2294 }
+    \oplus               { 2295 }
+    \ominus              { 2296 }
+    \otimes              { 2297 }
+    \oslash              { 2298 }
+    \odot                { 2299 }
+    \vdash               { 22A2 }
+    \dashv               { 22A3 }
+    \top                 { 22A4 }
+    \bot                 { 22A5 }
+    \models              { 22A7 }
+    \bigwedge            { 22C0 }
+    \bigvee              { 22C1 }
+    \bigcap              { 22C2 }
+    \bigcup              { 22C3 }
+    \cdot                { 22C5 }
+    \star                { 22C6 }
+    \bowtie              { 22C8 }
+    \vdots               { 22EE }
+    \ddots               { 22F1 }
+    \lceil               { 2308 }
+    \rceil               { 2309 }
+    \lfloor              { 230A }
+    \rfloor              { 230B }
+    \frown               { 2322 }
+    \smile               { 2323 }
+    \lmoustache          { 23B0 }
+    \rmoustache          { 23B1 }
+    \overbrace           { 23DE }
+    \underbrace          { 23DF }
+    \bigtriangleup       { 25B3 }
+    \triangleright       { 25B7 }
+    \bigtriangledown     { 25BD }
+    \triangleleft        { 25C1 }
+    \spadesuit           { 2660 }
+    \heartsuit           { 2661 }
+    \diamondsuit         { 2662 }
+    \clubsuit            { 2663 }
+    \flat                { 266D }
+    \natural             { 266E }
+    \sharp               { 266F }
+    \perp                { 27C2 }
+    \langle              { 27E8 }
+    \rangle              { 27E9 }
+    \lgroup              { 27EE }
+    \rgroup              { 27EF }
+    \longleftarrow       { 27F5 }
+    \longrightarrow      { 27F6 }
+    \longleftrightarrow  { 27F7 }
+    \Longleftarrow       { 27F8 }
+    \Longrightarrow      { 27F9 }
+    \Longleftrightarrow  { 27FA }
+    \longmapsto          { 27FC }
+    \setminus            { 29F5 }
+    \bigodot             { 2A00 }
+    \bigoplus            { 2A01 }
+    \bigotimes           { 2A02 }
+    \biguplus            { 2A04 }
+    \bigsqcup            { 2A06 }
+    \iiiint              { 2A0C }
+    \Join                { 2A1D }
+    \amalg               { 2A3F }
+    \preceq              { 2AAF }
+    \succeq              { 2AB0 }
+    \imath              { 1D6A4 }
+    \jmath              { 1D6A5 }
+    \q_recursion_tail { }
+    \q_recursion_stop
+%    \end{macrocode}
+%   Spaces: it's not totally clear, but at present simply make them standard
+%   spaces.
+%    \begin{macrocode}
+    \tl_const:cn { c_@@_math_char_ \cs_to_str:N \~ _tl } { ~ }
+    \tl_const:cn { c_@@_math_char_ \token_to_str:N \; _tl } { ~ }
+    \tl_const:cn { c_@@_math_char_ \token_to_str:N \> _tl } { ~ }
+    \tl_const:cn { c_@@_math_char_ \token_to_str:N \: _tl } { ~ }
+    \tl_const:cn { c_@@_math_char_ \token_to_str:N \, _tl } { ~ }
+    \tl_const:cn { c_@@_math_char_ \token_to_str:N \quad _tl } { ~ }
+    \tl_const:cn { c_@@_math_char_ \token_to_str:N \qquad _tl } { ~ }
+%    \end{macrocode}
+%   A small number of very common symbols: hard-coded as we are treating
+%   math mode as a fixed mapping.
+%    \begin{macrocode}
+    \tl_const:cx { c_@@_math_char_ \token_to_str:N \{ _tl }
+      { \c_left_brace_str }
+    \tl_const:cx { c_@@_math_char_ \token_to_str:N \} _tl }
+      { \c_right_brace_str }
+    \tl_const:cx { c_@@_math_char_ \token_to_str:N \_ _tl }
+      { \c_underscore_str }
+%    \end{macrocode}
+%   The \tn{sqrt} case is odd as it is a symbol but needs to be filtered out for
+%   the optional argument, so we store it separately.
+%    \begin{macrocode}
+    \tl_const:cx
+      { c_@@_math_ \token_to_str:N \sqrt _tl }
+      { \@@_tmp:n { "221A } }
+    \tl_const:cx
+      { c_@@_math_ \token_to_str:N \cuberoot _tl }
+      { \@@_tmp:n { "221B } }
+    \tl_const:cx
+      { c_@@_math_ \token_to_str:N \fourthroot _tl }
+      { \@@_tmp:n { "221C } }
+\group_end:
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+%</initex|package>
+%    \end{macrocode}
+%
+% \end{implementation}
+%
+% \PrintIndex

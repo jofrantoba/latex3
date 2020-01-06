@@ -164,6 +164,169 @@
 %   \end{itemize}
 % \end{function}
 %
+% \subsection{Removing formatting from text}
+%
+% \begin{function}[rEXP, added = 2020-01-06]{\text_purify:n}
+%   \begin{syntax}
+%     \cs{text_purify:n} \Arg{text}
+%   \end{syntax}
+%   Takes user input \meta{text} and expands as described for
+%   \cs{text_expand:n}, then removes all functions from the resulting
+%   text. Math mode material (as delimited by pairs given in
+%   \cs{l_text_math_delims_tl} or as the argument to commands listed in
+%   \cs{l_text_math_arg_tl}) is processed as determined by the current
+%   setting for \cs{text_set_purify_math_mode:n}, and is left contained
+%   in a pair of delimiters.  Non-expandable functions present in the
+%   \meta{text} must either have a defined equivalent (see
+%   \cs{text_declare_purify_equivalent:Nn}) or will be removed from the result.
+% \end{function}
+%
+% \begin{function}[added = 2020-01-06]
+%   {
+%     \text_declare_purify_equivalent:Nn ,
+%     \text_declare_purify_equivalent:Nx
+%   }
+%   \begin{syntax}
+%     \cs{text_declare_purify_equivalent:Nn} \meta{cmd} \Arg{replacement}
+%   \end{syntax}
+%   Declares that the \meta{replacement} tokens should be used whenever the
+%   \meta{cmd} (a single token) is encountered. The \meta{replacement} tokens
+%   should be expandable.
+% \end{function}
+%
+% \subsection{Converting math mode material}
+%
+% \begin{function}[rEXP, added = 2020-01-06]
+%   {
+%     \text_purify_math_unchanged:n,
+%     \text_purify_math_chars:n    ,
+%     \text_purify_math_unicode:n
+%   }
+%   \begin{syntax}
+%     \cs{text_purify_math_unchanged:n} \Arg{math}
+%   \end{syntax}
+%   Takes user input \meta{math} (which should be free of outer math mode
+%   delimiters) and expresses it in the \meta{form}:
+%   \begin{itemize}
+%     \item \texttt{unchanged}: no manipulation at all, the tokens are
+%       left delimited by the first pair in \cs{l_text_math_delims_tl}
+%       (or if empty, a pair of |$|)
+%     \item \texttt{chars} Retains only the text characters (category code
+%      $11$ and $12$) and spaces in the math mode material, and drops all
+%      other content
+%     \item \texttt{unicode} Converts the math mode material as far as
+%       possible to Unicode characters; see below for further details
+%       for more details
+%   \end{itemize}
+%   In all cases, the result is protected from further expansion by
+%   \cs{exp_not:n}.
+% \end{function}
+%
+% Whilst leaving math mode unchanged or retention of only characters is
+% relatively straight-forward, production of Unicode text from \LaTeX{}
+% math syntax is more involved. The approach here implements as far as
+% possible conversion of core \LaTeX{} and \pkg{amsmath} commands, plus
+% a small number of additional ideas from \pkg{unicode-math}.
+% \begin{itemize}
+%    \item Latin letters and Arabic numerals are input literally, whilst
+%      Greek letters use the control sequences
+%      \texttt{\textbackslash\meta{name}}, for example \tn{alpha} or
+%      \tn{Omega}
+%    \item Latin and Greek letters (including the \tn{var\dots} versions),
+%      Arabic numerals, \tn{nabla} and \tn{partial} are converted to
+%      the Unicode math range equivalent based on the currently-active
+%      math font command, with the latter being one or
+%      \begin{itemize}
+%        \item \tn{mathnormal}
+%        \item \tn{mathrm}
+%        \item \tn{mathup}
+%        \item \tn{mathbf} (alias \cs{mathbfup})
+%        \item \tn{mathit}
+%        \item \tn{mathbfit}
+%        \item \tn{mathscr}
+%        \item \tn{mathbfscr}
+%        \item \tn{mathfrak}
+%        \item \tn{mathbb}
+%        \item \tn{mathbffrak}
+%        \item \tn{mathsf} (alias \cs{mathsfup})
+%        \item \tn{mathsfup}
+%        \item \tn{mathbfsf} (alias \tn{mathbfsfup})
+%        \item \tn{mathsfit}
+%        \item \tn{mathbfsfit}
+%        \item \tn{mathtt}
+%      \end{itemize}
+%      along with the \texttt{unicode-math} \tn{sym\dots} equivalents.
+%    \item Super- and subscript material (marked up by |_|/|^| or by \tn{sp} and
+%      \tn{sb})is converted to the Unicode raised or lowered codepoints if the
+%      entire script portion can be represented in this way; otherwise it is
+%      marked using a |^| or |_| followed by the argument in parenthesis. The
+%      Unicode codepoints cover
+%      \begin{itemize}
+%        \item Arabic numerals
+%        \item Parenthesis, |-|, |+| and |=|
+%        \item For subscripts, the letters |i| and |n|
+%        \item For superscripts, the letters |a|, |e|, |o|, |k|, |l|, |m|,
+%          |n|, |p|, |s| and |t|
+%      \end{itemize}
+%    \item The math accent commands
+%      \begin{itemize}
+%        \item \tn{grave}
+%        \item \tn{acute}
+%        \item \tn{hat}
+%        \item \tn{widehat}
+%        \item \tn{tilde}
+%        \item \tn{widetilde}
+%        \item \tn{bar}
+%        \item \tn{breve}
+%        \item \tn{dot}
+%        \item \tn{ddot}
+%      \end{itemize}
+%      are converted to the trailing modifier characters.
+%    \item \tn{frac} is converted to
+%      \texttt{\meta{numerator}/\texttt{denominator}}, where parenthesis are
+%      added where the \meta{numerator} or \texttt{denominator} are no a single
+%      character, and where a space is added after the \texttt{denominator}.
+%      The same approach is used to convert \texttt{genfrac} from \pkg{amsmath}.
+%    \item \tn{sqrt} is converted to the Unicode symbol, with the mandatory
+%      argument in parenthesis. Any optional argument is given \emph{before}
+%      the root.
+%    \item Operators such as \tn{sin} are converted to text, with a space.
+%      added after the operator or, where there is a super/subscript, after
+%      any indices. (Operators are converted based on their internal
+%      structure, not by hard-coding their names.)
+%    \item Commands defined by the \LaTeX{} kernel which have a direct
+%      Unicode equivalent are replaced directly: there are around $200$ such
+%      commands.
+%    \item Other implicit characters are converted to their explicit
+%      equivalent: this is mainly relevant for use with \pkg{unicode-math}.
+%    \item Embedded textual content is treated as for \cs{text_purify:n},
+%      with the following commands marking up such text
+%      \begin{itemize}
+%        \item \tn{mbox}
+%        \item \tn{text}
+%        \item \tn{textrm}
+%        \item \tn{textsf}
+%        \item \tn{texttt}
+%        \item \tn{textnormal}
+%        \item \tn{textbf}
+%        \item \tn{textmd}
+%        \item \tn{textit}
+%        \item \tn{textsl}
+%        \item \tn{textsc}
+%        \item \tn{textup}
+%        \item \tn{textulc}
+%        \item \tn{emph}
+%      \end{itemize}
+% \end{itemize}
+%
+% \begin{function}[added = 2020-01-06]{\text_set_purify_math_mode:n}
+%   \begin{syntax}
+%     \cs{text_set_purify_math_mode:n} \meta{mode}
+%   \end{syntax}
+%   Sets the math purification mode to one of \texttt{unchanged},
+%   \texttt{chars} or \texttt{unicode}.
+% \end{function}
+%
 % \subsection{Control variables}
 %
 % \begin{variable}{\l_text_accents_tl}

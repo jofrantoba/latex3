@@ -13,7 +13,7 @@ this project uses date-based 'snapshot' version identifiers.
 - `\str_<type>case:n`
 - `\text_<type>case:n(n)`
 - `\text_expand:n` and supporting data structures
-- `\text_purify:n` and supporting data structures
+- `\text_purify:n`, `\text_purify_math_<method>:n` and supporting data structures
 
 ### Changed
 - Distribute LaTeX3 News

@@ -2,7 +2,7 @@
 %
 %% File: l3text-purify.dtx
 %
-% Copyright (C) 2020 The LaTeX3 Project
+% Copyright (C) 2019 The LaTeX3 Project
 %
 % It may be distributed and/or modified under the conditions of the
 % LaTeX Project Public License (LPPL), either version 1.3c of this
@@ -374,11 +374,9 @@
   { \{ \} \# \$ \% \_ }
   { \text_declare_purify_equivalent:Nx #1 { \cs_to_str:N #1 } }
 %    \end{macrocode}
-% Cross-referencing and similar.
+% Cross-referencing.
 %    \begin{macrocode}
-\tl_map_inline:nn
-  { \cite \label \ref }
-  { \text_declare_purify_equivalent:Nn #1 { \use_none:n } }
+\text_declare_purify_equivalent:Nn \label { \use_none:n }
 %    \end{macrocode}
 % Spaces.
 %    \begin{macrocode}
