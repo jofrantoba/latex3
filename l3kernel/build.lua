@@ -45,7 +45,7 @@ typesetruns      = 3
 unpackfiles      = {"l3.ins"}
 
 checkdeps   = {maindir .. "/l3backend"}
-typesetdeps = {maindir .. "/l3backend"}
+typesetdeps = {maindir .. "/l3backend", maindir .. "/l3packages/xparse"}
 unpackdeps  = { }
 
 -- Load the common build code
