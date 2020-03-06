@@ -1,0 +1,129 @@
+This is a generated file for the LaTeX (2e + expl3) validation system.
+Don't change this file in any respect.
+Author: Bruno Le Floch
+I got '\foo-\foo-{}
+I got '\foo-% ^^-{k}
+I got '\foo*-#^^-{&&&}
+I got '\foo*-%#^^-{}
+I got '\foo*-%^^-{}
+I got '\foo[ak]-%-{}
+I got '\foo[a]-bcd-{de}
+! LaTeX3 Error: The verbatim command '\foo' cannot be used inside an argument.
+For immediate help type H <return>.
+ ...                                              
+l. ...\use:n {\foo*+&#~+}
+The command '\foo' takes a verbatim argument. It may not appear within the
+argument of another function. It received an illegal token '##'.
+LaTeX will ignore '+&'.
+I got '\foo*--NoValue--{##}
+! LaTeX3 Error: The verbatim command '\foo' cannot be used inside an argument.
+For immediate help type H <return>.
+ ...                                              
+l. ...\use:n {\foo[\ab]+\ab+}
+The command '\foo' takes a verbatim argument. It may not appear within the
+argument of another function. It received an illegal token '\ab '.
+LaTeX will ignore '+'.
+I got '\foo[\ab ]--NoValue--{\ab }
+! LaTeX3 Error: The verbatim command '\foo' cannot be used inside an argument.
+For immediate help type H <return>.
+ ...                                              
+l. ...\use:n {\foo\abc\ }
+The command '\foo' takes a verbatim argument. It may not appear within the
+argument of another function. It received an illegal token '\abc '.
+LaTeX will ignore ''.
+I got '\foo--NoValue--{\abc }
+! LaTeX3 Error: Verbatim argument of command '\foo' ended by end of line.
+For immediate help type H <return>.
+ ...                                              
+l. ...\foo+a
+The verbatim argument of the command '\foo' cannot contain more than one line,
+but the end of the current line has been reached. You may have forgotten the
+closing delimiter.
+LaTeX will ignore '+a'.
+I got '\foo--NoValue--{+}
+I got '\foo-b-{}
+I got '\foo*-c-{}
+I got '\foo-%}#${-{}
+I got '\foo-%#$|+-{}
+I got '\foo-@#${%{$}#}-{}
+I got '\foo-{{}}-{}
+I got '\foo--{}
+! LaTeX3 Error: Verbatim argument of command '\foo' ended by end of line.
+For immediate help type H <return>.
+ ...                                              
+l. ...\foo{
+The verbatim argument of the command '\foo' cannot contain more than one line,
+but the end of the current line has been reached. You may have forgotten the
+closing delimiter.
+LaTeX will ignore '{'.
+I got '\foo--NoValue--{}
+! LaTeX3 Error: The verbatim command '\foo' cannot be used inside an argument.
+For immediate help type H <return>.
+ ...                                              
+l. ...\foo#
+         {}
+The command '\foo' takes a verbatim argument. It may not appear within the
+argument of another function. It received an illegal token '##'.
+LaTeX will ignore ''.
+I got '\foo--NoValue--{##}
+I got '\foo-%#&\-{}
+I've got \foo[x]-
+a%bc
+d#+ef
+-{+}- h&{}~i
++{}
+\foo"!@#%^&"{\a}+
+%$+{}
+\foo|%}#${|{}{%#$|+}{}
+\foo{%#$|+}||{}
+\foo{@#${%{$}#}}{}{${{{{}}}}}{}
+\foo{{{}}}{}{}{}
+\foo{}{}{}{}
+\foo{
+}{ }{
+}{}
+\foo#
+\ExplSyntaxOn
+\DeclareDocumentCommand{\foo}{v}{\tl_show:n{#1}}
+\ExplSyntaxOff
+\hali-
+! You can't use `macro parameter character #' in vertical mode.
+l. ...\halign{#
+             \cr\foo&ab&\cr}
+Sorry, but I'm not programmed to handle this case;
+I'll just pretend that you didn''t ask for it.
+If you're in the wrong mode, you might be able to
+return to the right one by typing `I}' or `I$' or `I\par'.
+! Misplaced \cr.
+l. ...\halign{#\cr
+                \foo&ab&\cr}
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+! LaTeX3 Error: The verbatim command '\foo' cannot be used inside an argument.
+For immediate help type H <return>.
+ ...                                              
+l. ...\halign{#\cr\foo&ab&\cr}
+The command '\foo' takes a verbatim argument. It may not appear within the
+argument of another function. It received an illegal token.
+LaTeX will ignore ''.
+! Argument of \foo  has an extra }.
+<inserted text> 
+\par 
+l. ...\halign{#\cr\foo&ab&\cr}
+I've run across a `}' that doesn't seem to match anything.
+For example, `\def\a#1{...}' and `\a}' would produce
+this error. If you simply proceed now, the `\par' that
+I've just inserted will cause me to report a runaway
+argument that might be the root of the problem. But if
+your `}' was spurious, just type `2' and it will go away.
+Runaway argument?
+! Paragraph ended before \foo  was complete.
+<to be read again> 
+\par 
+l. ...\halign{#\cr\foo&ab&\cr}
+I suspect you've forgotten a `}', causing me to apply this
+control sequence to too much text. How can we recover?
+My plan is to forget the whole thing and hope for the best.

@@ -7,7 +7,7 @@
 \ExplSyntaxOn
 \debug_on:n { check-declarations , deprecation , log-functions }
 \ExplSyntaxOff
-\RequirePackage{xparse}
+
 \begin{document}
 \START
 \AUTHOR{Joseph Wright, Bruno Le Floch}
@@ -160,7 +160,7 @@
   {
     \OMIT
     \DeclareDocumentCommand { \null } { } { }
-    \DeclareDocumentCommand { \foo } { >{\SplitList{;}} m +o g } { }
+    \DeclareDocumentCommand { \foo } { >{\SplitList{;}} m +o +m } { }
     \DeclareDocumentEnvironment { nullenv } { } { } { }
     \DeclareDocumentEnvironment { fooenv } { v D{$}{$} l u{!} } { } { }
     \TIMO
@@ -227,7 +227,7 @@
 \TEST { Test~#~in~argument~specification }
   {
     \DeclareDocumentCommand { \foo }
-      { D<>{##} G{##} t* E{_^}{{1##}{2##}} l m R(){##} u{...} }
+      { D<>{##} m{##} t* E{_^}{{1##}{2##}} m m R(){##} m{...} }
       { \TYPE { #1 | #2 | #3 | {#4}{#5} | #6 | #7 | #8 | #9 | D } }
     \foo<1>...{A}C...
     \foo{1}...{A}(B)C...
@@ -235,7 +235,7 @@
     \foo^1...{A}(B)C...
     \foo<1>{2}*_3^4...{A}(B)C...
     \DeclareDocumentCommand { \foo }
-      { +D<>{##} +G{##} +t* +E{_^}{{1##}{2##}} +l +m +R(){##} +u{...} }
+      { +D<>{##} +m{##} +t* +E{_^}{{1##}{2##}} +m +m +R(){##} +m{...} }
       { \TYPE { #1 | #2 | #3 | {#4}{#5} | #6 | #7 | #8 | #9 | D } }
     \foo<1>...{A}C...
     \foo{1}...{A}(B)C...
@@ -333,10 +333,6 @@
     \foo :a:b,c,:d.
     \DeclareDocumentCommand { \foo } { o s r[] } { \TYPE{|#1|#2|#3|} }
     \foo *[a]
-    \DeclareDocumentCommand { \foo } { g m } { \TYPE{|#1|#2|} }
-    \foo a     \foo {a}{b}
-    \DeclareDocumentCommand { \foo } { G{} m } { \TYPE{|#1|#2|} }
-    \foo a     \foo {a}{b}
     \DeclareDocumentCommand { \foo } { s r** } { \TYPE{|#1|#2|} }
     \foo **a*
     \DeclareDocumentCommand { \foo } { t( r() t) } { \TYPE{|#1|#2|#3|} }
@@ -410,18 +406,6 @@
       { \exp_not:n { |#1|#2|#3|#4| } }
     \TYPE { \foo \par }
     \TYPE { \foo * [ [ \A ] ] { \B } }
-  }
-
-\TEST { Expandable~l/u~arguments }
-  {
-    \DeclareExpandableDocumentCommand { \A } { u{def} } { \exp_not:n { |#1| } }
-    \TYPE { \A {def} ghi def }
-    \DeclareExpandableDocumentCommand { \B } { l } { \exp_not:n { |#1| } }
-    \TYPE { \B abc { def } }
-    \DeclareExpandableDocumentCommand { \C } { o l m } { \exp_not:n { |#1|#2|#3| } }
-    \TYPE { \C [abc]{def} }
-    \DeclareDocumentCommand { \D } { o l m } { \TYPE { |#1|#2|#3| } }
-    \D [abc]{def}
   }
 
 \TEST { Same~expandable~command~with/without~defaults }

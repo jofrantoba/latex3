@@ -7,6 +7,9 @@ this project uses date-based 'snapshot' version identifiers.
 
 ## [Unreleased]
 
+### Added
+- Moved majority of `xparse` concepts to kernel
+
 ## [2020-03-06]
 
 ### Added

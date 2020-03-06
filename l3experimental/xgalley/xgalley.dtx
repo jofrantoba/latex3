@@ -24,7 +24,21 @@
 % for those people who are interested.
 %
 %<*driver|package>
-\RequirePackage{xparse}
+% The version of expl3 required is tested as early as possible, as
+% some really old versions do not define \ProvidesExplPackage.
+\RequirePackage{expl3}[2020-03-06]
+%<package>\@ifpackagelater{expl3}{2020-03-06}
+%<package>  {}
+%<package>  {%
+%<package>    \PackageError{xgalley}{Support package l3kernel too old}
+%<package>      {%
+%<package>        Please install an up to date version of l3kernel\MessageBreak
+%<package>        using your TeX package manager or from CTAN.\MessageBreak
+%<package>        \MessageBreak
+%<package>        Loading xgalley will abort!%
+%<package>      }%
+%<package>    \endinput
+%<package>  }
 %</driver|package>
 %<*driver>
 \documentclass[full]{l3doc}

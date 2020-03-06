@@ -21,7 +21,6 @@ unpacksuppfiles = {"/support/docstrip.tex","/l3kernel/l3docstrip.dtx"}
 
 -- No deps other than the test system
 unpackdeps  = { }
-typesetdeps = {maindir .. "/l3packages/xparse"}
 
 -- Get the .pro files in the right place
 tdslocations = {"dvips/l3backend/*.pro"}

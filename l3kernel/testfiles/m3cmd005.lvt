@@ -1,5 +1,5 @@
 %
-% Copyright (C) 2018,2019 LaTeX3 Project
+% Copyright (C) 2018-2020 LaTeX3 Project
 %
 
 \documentclass{minimal}
@@ -9,7 +9,6 @@
 \ExplSyntaxOn
 \debug_on:n { check-declarations , deprecation , log-functions }
 \ExplSyntaxOff
-\RequirePackage{xparse}
 
 \begin{document}
 
@@ -20,7 +19,6 @@
 
 \TEST { Invalid~'!' }
   {
-    \NewDocumentCommand { \testA } { ! u{.} } { }
     \NewDocumentCommand { \testA } { ! o r() } { }
     \NewDocumentCommand { \testA } { ! + o m } { }
     \NewDocumentCommand { \testA } { ! ! o } { }
@@ -119,7 +117,6 @@
 
 \TEST { Invalid~signatures }
   {
-    \DeclareExpandableDocumentCommand { \testA } { u } { } { }
     \ProvideDocumentCommand { \testA } { O } { }
     \NewDocumentEnvironment { testA } { D [ ] } { } { }
     \NewDocumentEnvironment { testA } { ! + >{\TrimSpaces} } { } { }
@@ -166,9 +163,6 @@
     \NewExpandableDocumentCommand { \testA } { m o } { }
     \NewExpandableDocumentCommand { \testA } { +m m } { }
     \NewExpandableDocumentCommand { \testA } { v } { }
-    \NewExpandableDocumentCommand { \testA } { g } { }
-    \NewExpandableDocumentCommand { \testA } { o l } { }
-    \NewExpandableDocumentCommand { \testA } { o u { + } } { }
     \NewExpandableDocumentCommand { \testA } { >{\TrimSpaces} m } { }
   }
 

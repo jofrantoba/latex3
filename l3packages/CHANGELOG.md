@@ -7,6 +7,15 @@ this project uses date-based 'snapshot' version identifiers.
 
 ## [Unreleased]
 
+### Changed
+- Majority of concepts from `xparse` moved to kernel
+
+### Deprecated
+- `xparse` arg. types `g`, `l` and `u`
+
+### Removed
+- Pre-loader file `xparse.ltx`
+
 ## [2020-03-06]
 
 ### Added
