@@ -36,7 +36,7 @@ tagfiles     =
 typesetfiles =
   {
     "expl3.dtx", "l3docstrip.dtx","interface3.tex", "l3syntax-changes.tex",
-    "l3styleguide.tex", "l3term-glossary.tex", "source3.tex",
+    "l3styleguide.tex", "l3term-glossary.tex", "source3.tex", "usrguide3.tex",
     "l3prefixes.tex",
     "l3news*.tex"
   }
