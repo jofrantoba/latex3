@@ -190,9 +190,9 @@
 %
 % \begin{function}{\color_set:nnn}
 %   \begin{syntax}
-%     \cs{color_set:nnn} \Arg{name} \Arg{model} \Arg{value(s)}
+%     \cs{color_set:nnn} \Arg{name} \Arg{model(s)} \Arg{value(s)}
 %   \end{syntax}
-%   Stores the color specification equivalent to the \meta{model} and
+%   Stores the color specification equivalent to the \meta{model(s)} and
 %   \meta{values} as the \meta{name}.
 % \end{function}
 %
@@ -225,9 +225,9 @@
 %
 % \begin{function}{\color_select:nn}
 %   \begin{syntax}
-%     \cs{color_select:nn} \Arg{model} \Arg{value(s)}
+%     \cs{color_select:nn} \Arg{model(s)} \Arg{value(s)}
 %   \end{syntax}
-%   Activates the color specification equivalent to the \meta{model} and
+%   Activates the color specification equivalent to the \meta{model(s)} and
 %   \meta{value(s)} for typeset material.
 % \end{function}
 %
@@ -236,6 +236,31 @@
 %   the specified model when they are selected. Note that included images
 %   and similar are not influenced by this setting.
 % \end{variable}
+%
+% \section{Multiple color models}
+%
+% When selecting or setting a color with an explicit model, it is possible
+% to give values for more than one model at one time. This is particularly
+% useful where automated conversion between models does not give the desired
+% outcome. To do this, the list of models and list of values are both subdivided
+% using |/| characters (as for the similar function in \pkg{xcolor}). For
+% example, to save a color with explicit |cmyk| and |rgb| values, one could
+% use
+% \begin{verbatim}
+%   \color_set:nnn { foo } { cmyk / rgb }
+%     { 0.1 , 0.2 , 0.3 , 0.4 / 0.1, 0.2 , 0.3 }
+% \end{verbatim}
+% The manually-specified conversion will be used in preference to automated
+% calculation whenever the model(s) listed are used: both in expressions and
+% when a fixed model is active.
+% 
+% Similarly, the same syntax can be applied to directly selecting a color.
+% \begin{verbatim}
+%   \color_select:nn { cmyk / rgb }
+%     { 0.1 , 0.2 , 0.3 , 0.4 / 0.1, 0.2 , 0.3 }
+% \end{verbatim}
+% Again, this list is used when a fixed model is active: the first entry is used
+% unless there is a fixed model matching one of the other entries.
 %
 % \section{Core color representation}
 %
@@ -368,7 +393,7 @@
 %
 % \subsection{Model conversion}
 %
-% \begin{macro}{\@@_convert:nnN, \@@_convert:VVN}
+% \begin{macro}{\@@_convert:nnN, \@@_convert:nVN, \@@_convert:VVN}
 % \begin{macro}{\@@_convert:nnnN}
 % \begin{macro}[aux, EXP]
 %   {
@@ -386,7 +411,7 @@
 %    \begin{macrocode}
 \cs_new_protected:Npn \@@_convert:nnN #1#2#3
   { \@@_convert:nnVN {#1} {#2} #3 #3 }
-\cs_generate_variant:Nn \@@_convert:nnN { VV }
+\cs_generate_variant:Nn \@@_convert:nnN { nV , VV }
 \cs_new_protected:Npn \@@_convert:nnnN #1#2#3#4
   {
     \str_if_eq:nnT {#1} { spot } % TO DO!!!
@@ -587,10 +612,15 @@
                       { \l_@@_value_tl }
                   }
               }
-            \@@_convert:VVN
-              \l_@@_next_model_tl
+            \prop_get:cVNF { l_@@_named_ #2 _prop }
               \l_@@_model_tl
               \l_@@_next_value_tl
+              {
+                \@@_convert:VVN
+                  \l_@@_next_model_tl
+                  \l_@@_model_tl
+                  \l_@@_next_value_tl
+              }
           }
         \tl_set:Nx \l_@@_value_tl
           {
@@ -825,8 +855,13 @@
 %
 % \begin{macro}{\color_select:n}
 % \begin{macro}{\color_select:nn}
+% \begin{macro}{\@@_select_main:w, \@@_select_loop:w}
+% \begin{macro}{\@@_select:nnN}
+% \begin{macro}{\@@_select_swap:w}
 %   Parse the input expressions then get the backend to actually activate
-%   them.
+%   them. The main complexity here is the need to check through multiple models.
+%   That is done \enquote{locally} here as the approach is subtly different to
+%   when different models are being stored.
 %    \begin{macrocode}
 \cs_new_protected:Npn \color_select:n #1
   {
@@ -835,31 +870,62 @@
   }
 \cs_new_protected:Npn \color_select:nn #1#2
   {
-    \@@_direct:nnN {#1} {#2} \l_@@_current_tl
+    \@@_select_main:w
+      #1 / / \s_@@_mark #2 / / \s_@@_stop
     \@@_select:
   }
 %    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \subsection{Direct model use}
-%
-% \begin{macro}{\@@_direct:nnN}
-%   Directly set a color based on a model/value combination.
+%   If the first color model is the fixed one, or if there is no fixed
+%   model, we don't need most of the data: just set up and apply the backend
+%   function.
 %    \begin{macrocode}
-\cs_new_protected:Npn \@@_direct:nnN #1#2#3
+\cs_new_protected:Npn \@@_select_main:w
+  #1 / #2 / #3 \s_@@_mark #4 / #5 / #6 \s_@@_stop
+  {
+    \@@_select:nnN {#1} {#4} \l_@@_current_tl
+    \bool_lazy_or:nnF
+      { \tl_if_empty_p:N \l_color_fixed_model_tl }
+      { \str_if_eq_p:nV {#1} \l_color_fixed_model_tl }
+      { \@@_select_loop:w #2 / #3 \s_@@_mark #5 / #6 \s_@@_stop }
+  }
+%    \end{macrocode}
+%   If a fixed model applies, we need to check each possible value in order.
+%   If there is no hit at all, fall back on the generic formula-based
+%   interchange.
+%    \begin{macrocode}
+\cs_new_protected:Npn \@@_select_loop:w #1 / #2 \s_@@_mark #3 / #4 \s_@@_stop
+  {
+    \str_if_eq:nVTF {#1} \l_color_fixed_model_tl
+      { \@@_select:nnN {#1} {#3} \l_@@_current_tl }
+      {
+        \tl_if_blank:nTF {#1}
+          {
+            \exp_after:wN \@@_select_swap:w
+              \l_@@_current_tl \s_@@_stop
+          }
+          { \@@_select_loop:w #2 \s_@@_mark #4 \s_@@_stop }
+      }
+  }
+\cs_new_protected:Npn \@@_select:nnN #1#2#3
   {
     \cs_if_exist:cTF { @@_parse_model_ #1 :w }
       {
         \tl_set:Nx #3
-          { \use:c {  @@_parse_model_ #1 :w } #2 , 0 , 0 , 0 , 0 \s_@@_stop }
-        \@@_check_model:N #3
+          { \use:c { @@_parse_model_ #1 :w } #2 , 0 , 0 , 0 , 0 \s_@@_stop }
       }
-      {
-        \__kernel_msg_error:nnn { color } { unknown-model } {#1}
-      }
+      { \__kernel_msg_error:nnn { color } { unknown-model } {#1} }
+  }
+\cs_new_protected:Npn \@@_select_swap:w #1 ~ #2 \s_@@_stop
+  {
+    \@@_convert:nVN {#1} \l_color_fixed_model_tl \l_@@_value_tl
+    \tl_set:Nx #1
+      { \l_color_fixed_model_tl \c_space_tl \l_@@_value_tl }
   }
 %    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
 % \end{macro}
 %
 % \subsection{Defining named colors}
@@ -887,9 +953,14 @@
 %
 % \begin{macro}{\color_set:nn}
 % \begin{macro}{\color_set:nnn}
+% \begin{macro}{\@@_set:nw}
+% \begin{macro}{\@@_set_loop:nw}
+% \begin{macro}[EXP]{\@@_gobble_model:w}
 % \begin{macro}{\color_set_eq:nn}
-%   Defining named colors has to include a step to force creation of the
-%   underlying token list to avoid errors when checking is enabled.
+%   Defining named colors means working through the model list and saving
+%   both the \enquote{main} color and any equivalents in other models. Even
+%   if there is only one model, we store a |prop| as well as a |tl|, as there
+%   could be grouping weirdness, etc.
 %    \begin{macrocode}
 \cs_new_protected:Npn \color_set:nn #1#2
   {
@@ -897,10 +968,29 @@
     \@@_store:Nn \l_@@_named_tl {#1}
   }
 \cs_new_protected:Npn \color_set:nnn #1#2#3
+  { \@@_set:nw {#1} #2 / / \s_@@_mark #3 / / \s_@@_stop }
+\cs_new_protected:Npn \@@_set:nw
+  #1#2 / #3 / #4 \s_@@_mark #5 / #6 / #7 \s_@@_stop
   {
-    \@@_direct:nnN {#2} {#3} \l_@@_named_tl
+    \@@_select:nnN {#2} {#5} \l_@@_named_tl
     \@@_store:Nn \l_@@_named_tl {#1}
+    \prop_clear_new:c { l_@@_named_ #1 _prop }
+    \prop_put:cnx { l_@@_named_ #1 _prop } {#2}
+      { \exp_after:wN \@@_gobble_model:w \l_@@_named_tl }
+    \@@_set_loop:nw {#1} #3 / #4 \s_@@_mark #6 / #7 \s_@@_stop
   }
+\cs_new_protected:Npn \@@_set_loop:nw
+  #1#2 / #3 \s_@@_mark #4 / #5 \s_@@_stop
+  {
+    \tl_if_blank:nF {#2}
+      {
+        \@@_select:nnN {#2} {#4} \l_@@_named_tl
+        \prop_put:cnx { l_@@_named_ #1 _prop } {#2}
+          { \exp_after:wN \@@_gobble_model:w \l_@@_named_tl }
+        \@@_set_loop:nw {#1} #3 \s_@@_mark #5 \s_@@_stop
+      }
+  }
+\cs_new:Npn \@@_gobble_model:w #1 ~ { }
 \cs_new_protected:Npn \color_set_eq:nn #1#2
   {
     \@@_if_defined:nTF {#2}
@@ -956,9 +1046,17 @@
     \msg_show:nnxxxx { LaTeX / color } { show }
       {#1}
       {
-        \@@_if_defined:nTF {#1}
+        \@@_if_defined:nT {#1}
           { \exp_last_unbraced:Nv \@@_show:w { l_@@_named_ #1 _tl } \s_@@_stop }
-          { }
+        \@@_if_defined:nT {#1}
+          {
+            \int_compare:nNnT { \prop_count:c { l_@@_named_ #1 _prop } } > 1
+              {
+                \prop_map_function:cN
+                  { l_@@_named_ #1 _prop }
+                  \msg_show_item_unbraced:nn
+              }
+          }
       }
       { }
       { }

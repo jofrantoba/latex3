@@ -5,6 +5,7 @@ Author: Joseph Wright
 TEST 1: Hsb model
 ============================================================
 Defining \l__color_named_foo1_tl on line ...
+Defining \l__color_named_foo1_prop on line ...
 The color foo1 has the properties:
 >  model  =>  rgb
 >  value  =>  0.7, 0.315, 0.28.
@@ -60,6 +61,7 @@ The color foo1 has the properties:
 <recently read> }
 l. ...  }
 Defining \l__color_named_foo2_tl on line ...
+Defining \l__color_named_foo2_prop on line ...
 The color foo2 has the properties:
 >  model  =>  rgb
 >  value  =>  0.07059, 0.20392, 0.68235.
