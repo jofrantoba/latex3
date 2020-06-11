@@ -50,16 +50,21 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 \TEST { Exporting~colors }
   {
-    \color_export:nnN { blue } { HTML } \l_tmpa_tl
-    \tl_show:N \l_tmpa_tl
-    \color_export:nnN { blue!50!red } { HTML } \l_tmpa_tl
-    \tl_show:N \l_tmpa_tl
-    \color_export:nnN { cyan } { HTML } \l_tmpa_tl
-    \tl_show:N \l_tmpa_tl
-    \color_export:nnnN { gray } { 0.6 } { HTML } \l_tmpa_tl
-    \tl_show:N \l_tmpa_tl
+    \clist_map_inline:nn
+      { annotation , HTML }
+      {
+        \color_export:nnN { blue } {#1} \l_tmpa_tl
+        \tl_show:N \l_tmpa_tl
+        \color_export:nnN { blue!50!red } {#1} \l_tmpa_tl
+        \tl_show:N \l_tmpa_tl
+        \color_export:nnN { cyan } {#1} \l_tmpa_tl
+        \tl_show:N \l_tmpa_tl
+        \color_export:nnnN { gray } { 0.6 } {#1} \l_tmpa_tl
+        \tl_show:N \l_tmpa_tl
+      }
   }
 
 \TEST { Exporting~color:~errors }

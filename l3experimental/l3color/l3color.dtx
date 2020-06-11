@@ -268,6 +268,8 @@
 % \begin{itemize}
 %    \item \texttt{HTML} Uppercase two-digit hexadecimal values, expressing
 %      a red-green-blue color; the digits are \emph{not} separated
+%    \item \texttt{annotation} Space-separated red-green-blue values
+%      suitable for use as a PDF annotation color
 % \end{itemize}
 %
 % \begin{function}{\color_export:nnN}
@@ -995,7 +997,7 @@
   { \exp_after:wN \@@_export:nnnN #2 {#1} #2 }
 \cs_new:Npn \@@_export:nnnN #1#2#3#4
   {
-    \cs_if_exist_use:cF { @@_export_ #3 :nnN }
+    \cs_if_exist_use:cF { @@_export_format_ #3 :nnN }
       {
         \__kernel_msg_error:nnn { color } { unknown-export-format } {#3}
         \use_none:nnn
@@ -1008,22 +1010,29 @@
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\@@_export_HTML:nnN}
-% \begin{macro}{\@@_export_HTML:Nw}
+% \begin{macro}{\@@_export_format_annotation:nnN, \@@_export_format_HTML:nnN}
+% \begin{macro}{\@@_export_rgb:nnNN}
+% \begin{macro}{\@@_export_annotation:Nw, \@@_export_HTML:Nw}
 % \begin{macro}[EXP]{\@@_export_HTML:n}
 %   \textsc{html} values must be given in |rgb|: we force conversion if
 %   required, then do some simple maths.
 %    \begin{macrocode}
-\cs_new_protected:Npn \@@_export_HTML:nnN #1#2#3
+\cs_new_protected:Npn \@@_export_format_annotation:nnN #1#2#3
+  { \@@_export_rgb:nnNN {#1} {#2} #3 \@@_export_HTML:Nw }
+\cs_new_protected:Npn \@@_export_format_HTML:nnN #1#2#3
+  { \@@_export_rgb:nnNN {#1} {#2}#3 \@@_export_annotation:Nw }
+\cs_new_protected:Npn \@@_export_rgb:nnNN #1#2#3#4
   {
     \str_if_eq:nnTF {#1} { rgb }
-      { \@@_export_HTML:Nw #3 #2 \s_@@_stop }
+      { #4 #3 #2 \s_@@_stop }
       {
         \@@_convert:nnnN {#1} { rgb } {#2} #3
-        \exp_after:wN \@@_export_HTML:Nw \exp_after:wN #3
+        \exp_after:wN #4 \exp_after:wN #3
           #3 \s_@@_stop
       }
   }
+\cs_new_protected:Npn \@@_export_annotation:Nw #1#2 \s_@@_stop
+  { \tl_set:Nx #1 {#2} }
 \cs_new_protected:Npn \@@_export_HTML:Nw #1#2 ~ #3 ~ #4 \s_@@_stop
   {
     \tl_set:Nx #1
@@ -1040,6 +1049,7 @@
       { \int_to_Hex:n { \fp_to_int:n { #1 * 255 } } }
   }
 %    \end{macrocode}
+% \end{macro}
 % \end{macro}
 % \end{macro}
 % \end{macro}
