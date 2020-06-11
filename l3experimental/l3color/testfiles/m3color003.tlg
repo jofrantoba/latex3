@@ -52,6 +52,18 @@ l. ...  }
 ! OK.
 <argument> \l_tmpa_box 
 l. ...  }
+> \box...=
+\hbox(6.94444+0.0)x22.50005
+.\pdfcolorstack 0 push {0.181 g 0.181 G}
+.\OT1/cmr/m/n/10 H
+.\OT1/cmr/m/n/10 e
+.\OT1/cmr/m/n/10 l
+.\OT1/cmr/m/n/10 l
+.\OT1/cmr/m/n/10 o
+.\pdfcolorstack 0 pop
+! OK.
+<argument> \l_tmpa_box 
+l. ...  }
 ============================================================
 ============================================================
 TEST 2: Multiple models: named

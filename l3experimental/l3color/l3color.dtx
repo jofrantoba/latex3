@@ -382,8 +382,8 @@
 %
 % \subsection{Model conversion}
 %
-% \begin{macro}{\@@_convert:nnN, \@@_convert:nVN, \@@_convert:VVN}
-% \begin{macro}{\@@_convert:nnnN}
+% \begin{macro}{\@@_convert:nnN, \@@_convert:VVN}
+% \begin{macro}{\@@_convert:nnnN, \@@_convert:nVnN, \@@_convert:nnVN}
 % \begin{macro}[aux, EXP]
 %   {
 %     \@@_convert_gray_rgb:w
@@ -400,7 +400,7 @@
 %    \begin{macrocode}
 \cs_new_protected:Npn \@@_convert:nnN #1#2#3
   { \@@_convert:nnVN {#1} {#2} #3 #3 }
-\cs_generate_variant:Nn \@@_convert:nnN { nV , VV }
+\cs_generate_variant:Nn \@@_convert:nnN { VV }
 \cs_new_protected:Npn \@@_convert:nnnN #1#2#3#4
   {
     \str_if_eq:nnT {#1} { spot } % TO DO!!!
@@ -408,7 +408,7 @@
     \tl_set:Nx #4
       { \use:c { @@_convert_ #1 _ #2 :w } #3 ~ 0 ~ 0 ~ 0 \s_@@_stop }
   }
-\cs_generate_variant:Nn \@@_convert:nnnN { nnV }
+\cs_generate_variant:Nn \@@_convert:nnnN { nV , nnV }
 \cs_new:Npn \@@_convert_gray_rgb:w #1 ~ #2 \s_@@_stop
   { #1 ~ #1 ~ #1 }
 \cs_new:Npn \@@_convert_gray_cmyk:w #1 ~ #2 \s_@@_stop
@@ -916,8 +916,8 @@
   }
 \cs_new_protected:Npn \@@_select_swap:nn #1#2
   {
-    \@@_convert:nVN {#1} \l_color_fixed_model_tl \l_@@_value_tl
-    \tl_set:Nx #1
+    \@@_convert:nVnN {#1} \l_color_fixed_model_tl {#2} \l_@@_value_tl
+    \tl_set:Nx \l_@@_current_tl
       { { \l_color_fixed_model_tl } { \l_@@_value_tl } }
   }
 %    \end{macrocode}

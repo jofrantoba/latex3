@@ -56,6 +56,19 @@ l. ...  }
 ! OK.
 <argument> \l_tmpa_box 
 l. ...  }
+> \box...=
+\hbox(6.94444+0.0)x22.50005
+.\special{color push gray 0.181}
+.\special{ps:SDict begin /color.fc {} def end}
+.\OT1/cmr/m/n/10 H
+.\OT1/cmr/m/n/10 e
+.\OT1/cmr/m/n/10 l
+.\OT1/cmr/m/n/10 l
+.\OT1/cmr/m/n/10 o
+.\special{color pop}
+! OK.
+<argument> \l_tmpa_box 
+l. ...  }
 ============================================================
 ============================================================
 TEST 2: Multiple models: named
