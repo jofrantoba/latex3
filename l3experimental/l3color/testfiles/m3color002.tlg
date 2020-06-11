@@ -66,3 +66,29 @@ The color foo2 has the properties:
 <recently read> }
 l. ...  }
 ============================================================
+============================================================
+TEST 3: Exporting colors
+============================================================
+> \l_tmpa_tl=0000FF.
+<recently read> }
+l. ...  }
+> \l_tmpa_tl=800080.
+<recently read> }
+l. ...  }
+> \l_tmpa_tl=00FFFF.
+<recently read> }
+l. ...  }
+> \l_tmpa_tl=999999.
+<recently read> }
+l. ...  }
+============================================================
+============================================================
+TEST 4: Exporting color: errors
+============================================================
+! LaTeX3 Error: Unknown export format 'mumble'.
+For immediate help type H <return>.
+ ...                                              
+l. ...  }
+LaTeX has been asked to export a color in format 'mumble', but this has never
+been defined.
+============================================================

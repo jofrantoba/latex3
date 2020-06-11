@@ -7,6 +7,9 @@ this project uses date-based 'snapshot' version identifiers.
 
 ## [Unreleased]
 
+### Added
+- `\color_export:nn(n)N` (see #742)
+
 ### Changed
 - Internal color model
 - Internal performance enhancements

@@ -237,14 +237,14 @@
 %   and similar are not influenced by this setting.
 % \end{variable}
 %
-% \section{Core color representation}
+% \section{Internal color representation}
 %
 % To allow data to be handled internally, \pkg{l3color} uses a simple
 % representation of color, comprising two \meta{balanced text} entries, the first
 % the \meta{model} and the second the \meta{values} given
 % \emph{separated by spaces}.
 %
-% This core representation is produced when parsing color expressions.
+% This internal representation is produced when parsing color expressions.
 % 
 % \begin{function}{\color_parse:nN}
 %   \begin{syntax}
@@ -254,6 +254,38 @@
 %   \meta{tl} to the equivalent \meta{core color representation}
 %   (used at the backend level and based on \texttt{dvips} color
 %   representation).
+% \end{function}
+%
+% \section{Exporting color specifications}
+%
+% The major use of color expressions is in setting typesetting output, but there
+% are other places in which some form of color information is required. These
+% may need data in a different format or using a different model to the internal
+% representation. Thus a set of functions are available to export colors in
+% different formats.
+%
+% Valid export targets are
+% \begin{itemize}
+%    \item \texttt{HTML} Uppercase two-digit hexadecimal values, expressing
+%      a red-green-blue color; the digits are \emph{not} separated
+% \end{itemize}
+%
+% \begin{function}{\color_export:nnN}
+%   \begin{syntax}
+%     \cs{color_export:nnN} \Arg{color expression} \Arg{format} \Arg{tl}
+%   \end{syntax}
+%   Parses the \meta{color expression} as described for \cs{color_parse:nN},
+%   then converts to the \meta{format} specified and assigns the data to the
+%   \meta{tl}.
+% \end{function}
+%
+% \begin{function}{\color_export:nnN}
+%   \begin{syntax}
+%     \cs{color_export:nnnN} \Arg{model} \Arg{value(s)} \Arg{format} \Arg{tl}
+%   \end{syntax}
+%   Expresses the combination of \mea{model} and \meta{value(s)} in an
+%   internal representation, then converts to the \meta{format} specified and
+%   assigns the data to the \meta{tl}.
 % \end{function}
 %
 % \section{Spot colors}
@@ -942,6 +974,76 @@
 %    \end{macrocode}
 % \end{variable}
 %
+% \subsection{Exporting colors}
+%
+% \begin{macro}{\color_export:nnN}
+% \begin{macro}{\color_export:nnnN}
+% \begin{macro}{\@@_export:nN}
+% \begin{macro}{\@@_export:nnnN}
+%    \begin{macrocode}
+\cs_new_protected:Npn \color_export:nnN #1#2#3
+  {
+    \color_parse:nN {#1} #3
+    \@@_export:nN {#2} #3
+  }
+\cs_new_protected:Npn \color_export:nnnN #1#2#3#4
+  {
+    \@@_direct:nnN {#1} {#2} #4
+    \@@_export:nN {#3} #4
+  }
+\cs_new_protected:Npn \@@_export:nN #1#2
+  { \exp_after:wN \@@_export:nnnN #2 {#1} #2 }
+\cs_new:Npn \@@_export:nnnN #1#2#3#4
+  {
+    \cs_if_exist_use:cF { @@_export_ #3 :nnN }
+      {
+        \__kernel_msg_error:nnn { color } { unknown-export-format } {#3}
+        \use_none:nnn
+      }
+        {#1} {#2} #4
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\@@_export_HTML:nnN}
+% \begin{macro}{\@@_export_HTML:Nw}
+% \begin{macro}[EXP]{\@@_export_HTML:n}
+%   \textsc{html} values must be given in |rgb|: we force conversion if
+%   required, then do some simple maths.
+%    \begin{macrocode}
+\cs_new_protected:Npn \@@_export_HTML:nnN #1#2#3
+  {
+    \str_if_eq:nnTF {#1} { rgb }
+      { \@@_export_HTML:Nw #3 #2 \s_@@_stop }
+      {
+        \@@_convert:nnnN {#1} { rgb } {#2} #3
+        \exp_after:wN \@@_export_HTML:Nw \exp_after:wN #3
+          #3 \s_@@_stop
+      }
+  }
+\cs_new_protected:Npn \@@_export_HTML:Nw #1#2 ~ #3 ~ #4 \s_@@_stop
+  {
+    \tl_set:Nx #1
+      {
+        \@@_export_HTML:n {#2}
+        \@@_export_HTML:n {#3}
+        \@@_export_HTML:n {#4}
+      }
+  }
+\cs_new:Npn \@@_export_HTML:n #1
+  {
+    \fp_compare:nNnTF {#1} = { 0 }
+      { 00 }
+      { \int_to_Hex:n { \fp_to_int:n { #1 * 255 } } }
+  }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
 % \subsection{Diagnostics}
 %
 % \begin{macro}{\color_show:n}
@@ -977,6 +1079,12 @@
   { Unknown~color~'#1'. }
   {
     LaTeX~has~been~asked~to~use~a~color~named~'#1',~
+    but~this~has~never~been~defined.
+  }
+\__kernel_msg_new:nnnn { color } { unknown-export-format }
+  { Unknown~export~format~'#1'. }
+  {
+    LaTeX~has~been~asked~to~export~a~color~in~format~'#1',~
     but~this~has~never~been~defined.
   }
 \__kernel_msg_new:nnnn { color } { unknown-model }
